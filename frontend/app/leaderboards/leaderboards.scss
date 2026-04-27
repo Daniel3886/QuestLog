@@ -1,0 +1,338 @@
+// app/leaderboards/leaderboards.scss
+
+.leaderboards {
+  min-height: 100vh;
+  padding: 1rem 0;
+  position: relative;
+  overflow-x: hidden; // Prevent horizontal scroll
+
+  &__particles {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-image: repeating-linear-gradient(
+      45deg,
+      rgba(255, 215, 0, 0.03) 0px,
+      rgba(255, 215, 0, 0.03) 2px,
+      transparent 2px,
+      transparent 8px
+    );
+    pointer-events: none;
+    z-index: -1;
+  }
+
+  // Hero Banner
+  &__hero {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 2rem;
+    background: linear-gradient(135deg, var(--pixel-card), #3a2a4e);
+    padding: 2rem;
+    margin-bottom: 2rem;
+    border: 4px solid var(--pixel-border);
+    box-shadow: 6px 6px 0 rgba(0, 0, 0, 0.3);
+  }
+
+  &__hero-content {
+    flex: 2;
+  }
+
+  &__hero-text {
+    color: var(--pixel-text-dim);
+    margin-top: 0.5rem;
+  }
+
+  &__hero-stats {
+    display: flex;
+    gap: 1.5rem;
+  }
+
+  &__stat {
+    text-align: center;
+    background: rgba(0, 0, 0, 0.3);
+    padding: 0.75rem 1.25rem;
+    border: 2px solid var(--pixel-border);
+    
+    &-value {
+      display: block;
+      font-size: 2rem;
+      font-weight: bold;
+      color: var(--pixel-gold);
+    }
+    
+    &-label {
+      font-size: 0.7rem;
+      color: var(--pixel-text-dim);
+    }
+  }
+
+  // Tabs
+  &__tabs {
+    display: flex;
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+    border-bottom: 2px solid var(--pixel-border);
+    padding-bottom: 0.5rem;
+  }
+
+  &__tab {
+    background: none;
+    border: none;
+    font-family: inherit;
+    font-size: 1.2rem;
+    font-weight: bold;
+    padding: 0.5rem 1.5rem;
+    cursor: pointer;
+    color: var(--pixel-text-dim);
+    transition: all 0.05s linear;
+    
+    &:hover {
+      color: var(--pixel-text);
+      transform: translateY(-2px);
+    }
+
+    
+  // Metric selector
+  &__metric-selector {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+    flex-wrap: wrap;
+  }
+
+  &__metric-label {
+    font-size: 0.9rem;
+    color: var(--pixel-text-dim);
+  }
+
+  &__metric-buttons {
+    display: flex;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+  }
+    
+    &.active {
+      color: var(--pixel-primary);
+      border-bottom: 3px solid var(--pixel-primary);
+    }
+  }
+
+  // Table container with overflow-x auto for responsiveness
+  &__table {
+    width: 100%;
+    overflow-x: auto;
+    background: var(--pixel-card);
+    border: 4px solid var(--pixel-border);
+  }
+
+  // Table grid definitions
+  .leaderboards__table-header,
+  .leaderboards__row {
+    display: grid;
+    gap: 0.5rem;
+    padding: 0.75rem 1rem;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    transition: background 0.1s ease;
+  }
+
+  // Adventurer columns
+  .leaderboards__table-header,
+  .leaderboards__row:not(.leaderboards__row--guild) {
+    grid-template-columns: 70px 2fr 80px 100px 100px 100px;
+  }
+
+  // Guild columns (6 columns)
+  .leaderboards__table-header--guild,
+  .leaderboards__row--guild {
+    grid-template-columns: 70px 2fr 80px 100px 100px 100px;
+  }
+
+  // Hover effect – only background change, no transform
+  .leaderboards__row {
+    &:hover {
+      background: rgba(124, 58, 237, 0.2);
+      // Removed transform: translateX(2px) to prevent horizontal scrollbar
+    }
+  }
+
+  &__cell {
+    display: flex;
+    align-items: center;
+    
+    &.rank {
+      font-weight: bold;
+    }
+
+    &.metric-value {
+      font-weight: bold;
+      color: var(--pixel-secondary);
+    }
+    
+    &.streak,
+    &.coins,
+    &.quests,
+    &.gems,
+    &.members {
+      font-weight: 500;
+      color: var(--pixel-text);
+    }
+  }
+
+  // Rank badge
+  .rank-badge {
+    background: var(--pixel-bg);
+    padding: 0.2rem 0.5rem;
+    border: 1px solid var(--pixel-border);
+    font-weight: bold;
+    font-size: 0.85rem;
+  }
+
+  // Player info
+  .player-info {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+  }
+
+  .player-avatar {
+    font-size: 1.8rem;
+    background: rgba(0, 0, 0, 0.3);
+    padding: 0.15rem;
+    border: 1px solid var(--pixel-border);
+    width: 36px;
+    height: 36px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .player-name {
+    font-weight: 500;
+  }
+
+  // Level badge
+  .level-badge {
+    background: var(--pixel-primary);
+    color: #1a0b2e;
+    padding: 0.2rem 0.5rem;
+    font-size: 0.7rem;
+    font-weight: bold;
+    border: 1px solid var(--pixel-border);
+  }
+
+  // Current user section (for ranks >10)
+  &__current-user {
+    margin-top: 1.5rem;
+    padding: 1rem;
+    border: 3px solid var(--pixel-gold);
+    background: rgba(255, 215, 0, 0.1);
+  }
+
+  &__current-user-label {
+    font-size: 0.8rem;
+    color: var(--pixel-gold);
+    margin-bottom: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+  }
+
+  .is-current-user {
+    background: rgba(255, 215, 0, 0.15);
+    border-left: 4px solid var(--pixel-gold);
+    position: relative;
+    
+    &::before {
+      content: '★';
+      position: absolute;
+      left: -8px;
+      top: 50%;
+      transform: translateY(-50%);
+      color: var(--pixel-gold);
+      font-size: 1rem;
+    }
+  }
+
+  // Footer
+  &__footer {
+    margin-top: 2rem;
+    padding: 1rem;
+    text-align: center;
+    font-size: 0.8rem;
+    color: var(--pixel-text-dim);
+    background: var(--pixel-bg-light);
+  }
+}
+
+// Responsive
+@media (max-width: 900px) {
+  .leaderboards__table-header,
+  .leaderboards__row:not(.leaderboards__row--guild) {
+    grid-template-columns: 60px 1.5fr 60px 80px 80px 80px !important;
+    font-size: 0.75rem;
+    gap: 0.4rem;
+  }
+  
+  .leaderboards__table-header--guild,
+  .leaderboards__row--guild {
+    grid-template-columns: 60px 1.5fr 60px 80px 70px 80px !important;
+  }
+  
+  .player-avatar {
+    font-size: 1.2rem;
+    width: 28px;
+    height: 28px;
+  }
+  
+  .player-name {
+    font-size: 0.8rem;
+  }
+}
+
+@media (max-width: 768px) {
+  .leaderboards__hero {
+    flex-direction: column;
+    text-align: center;
+  }
+  
+  .leaderboards__table-header,
+  .leaderboards__row:not(.leaderboards__row--guild),
+  .leaderboards__table-header--guild,
+  .leaderboards__row--guild {
+    grid-template-columns: 50px 1.2fr 50px 60px 60px 60px !important;
+    font-size: 0.7rem;
+    padding: 0.5rem;
+  }
+  
+  .rank-badge {
+    font-size: 0.7rem;
+  }
+  
+  .level-badge {
+    font-size: 0.6rem;
+  }
+}
+
+.metric-btn {
+    background: var(--pixel-bg);
+    border: 2px solid var(--pixel-border);
+    padding: 0.4rem 1rem;
+    font-family: inherit;
+    font-size: 0.85rem;
+    cursor: pointer;
+    color: var(--pixel-text-dim);
+    
+    &:hover {
+      transform: translate(1px, 1px);
+    }
+    
+    &.active {
+      background: var(--pixel-primary);
+      color: #1a0b2e;
+      border-color: var(--pixel-border);
+    }
+  }
