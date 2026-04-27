@@ -1,0 +1,403 @@
+// app/lobby/lobby.scss
+
+.lobby {
+  min-height: 100vh;
+  padding: 1rem 0;
+  position: relative;
+
+  &__particles {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-image: repeating-linear-gradient(
+      45deg,
+      rgba(255, 204, 0, 0.02) 0px,
+      rgba(255, 204, 0, 0.02) 2px,
+      transparent 2px,
+      transparent 8px
+    );
+    pointer-events: none;
+    z-index: -1;
+  }
+
+  // Header / Character Stats
+  &__header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 1.5rem;
+    background: var(--pixel-card);
+    border: 4px solid var(--pixel-border);
+    padding: 1rem 2rem;
+    margin-bottom: 2rem;
+    box-shadow: 6px 6px 0 rgba(0, 0, 0, 0.3);
+  }
+
+  &__character {
+    display: flex;
+    align-items: center;
+    gap: 1.5rem;
+  }
+
+  &__character-avatar {
+    position: relative;
+    .lobby__character-sprite {
+      font-size: 4rem;
+      filter: drop-shadow(2px 2px 0 #000);
+    }
+    .lobby__character-level {
+      position: absolute;
+      bottom: -8px;
+      right: -8px;
+      background: var(--pixel-primary);
+      color: #1a0b2e;
+      font-size: 0.7rem;
+      font-weight: bold;
+      padding: 2px 6px;
+      border: 2px solid var(--pixel-border);
+      image-rendering: crisp-edges;
+    }
+  }
+
+  &__character-stats {
+    flex: 1;
+  }
+
+  &__xp-bar {
+    position: relative;
+    width: 200px;
+    background: #2a1a3e;
+    border: 2px solid var(--pixel-border);
+    height: 20px;
+    margin-bottom: 0.75rem;
+    .lobby__xp-fill {
+      height: 100%;
+      width: 0%;
+      background: repeating-linear-gradient(
+        90deg,
+        var(--pixel-secondary),
+        var(--pixel-secondary) 8px,
+        #00a0c0 8px,
+        #00a0c0 16px
+      );
+      transition: width 0.3s steps(10);
+    }
+    .lobby__xp-text {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      font-size: 0.7rem;
+      font-weight: bold;
+      color: white;
+      text-shadow: 1px 1px 0 #000;
+      white-space: nowrap;
+    }
+  }
+
+  &__stat-row {
+    display: flex;
+    gap: 1rem;
+    flex-wrap: wrap;
+  }
+
+  &__stat {
+    font-size: 0.8rem;
+    color: var(--pixel-text-dim);
+    background: rgba(0, 0, 0, 0.3);
+    padding: 0.25rem 0.5rem;
+    border: 1px solid var(--pixel-border);
+  }
+
+  &__daily-summary {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    background: rgba(0, 0, 0, 0.4);
+    padding: 0.5rem 1rem;
+    border: 2px solid var(--pixel-secondary);
+    .lobby__daily-icon {
+      font-size: 2rem;
+    }
+    .lobby__daily-text {
+      display: flex;
+      flex-direction: column;
+    }
+    .lobby__daily-label {
+      font-size: 0.7rem;
+      color: var(--pixel-text-dim);
+    }
+    .lobby__daily-value {
+      font-size: 1.5rem;
+      font-weight: bold;
+      color: var(--pixel-secondary);
+    }
+  }
+
+  // Quests Header
+  &__quests-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    flex-wrap: wrap;
+    margin: 2rem 0 1.5rem;
+  }
+
+  // Quest Grid
+  &__quests-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(380px, 1fr));
+    gap: 1.5rem;
+    margin-bottom: 3rem;
+  }
+
+  // Forge section
+  &__forge {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 1rem;
+    background: var(--pixel-bg-light);
+    border: 4px solid var(--pixel-gold);
+    padding: 1rem 2rem;
+    margin-top: 2rem;
+    .lobby__forge-icon {
+      font-size: 2.5rem;
+    }
+    .lobby__forge-text {
+      flex: 1;
+      span {
+        display: block;
+        font-weight: bold;
+        font-size: 1.1rem;
+      }
+      small {
+        font-size: 0.7rem;
+        color: var(--pixel-text-dim);
+      }
+    }
+  }
+}
+
+// Quest Card Component
+.quest-card {
+  display: flex;
+  gap: 1rem;
+  padding: 1rem;
+  transition: all 0.1s steps(2);
+  &:hover {
+    transform: translateY(-4px);
+  }
+  &__icon {
+    font-size: 3rem;
+    background: rgba(0, 0, 0, 0.3);
+    padding: 0.5rem;
+    border: 2px solid var(--pixel-border);
+    border-radius: 0;
+  }
+  &__content {
+    flex: 1;
+  }
+  &__header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.5rem;
+    h3 {
+      font-size: 1.1rem;
+      margin: 0;
+    }
+  }
+  &__status {
+    font-size: 1.2rem;
+  }
+  &__description {
+    font-size: 0.8rem;
+    color: var(--pixel-text-dim);
+    margin-bottom: 0.75rem;
+  }
+  &__progress {
+    margin: 0.75rem 0;
+  }
+  &__progress-bar {
+    background: #2a1a3e;
+    border: 2px solid var(--pixel-border);
+    height: 12px;
+    margin-bottom: 0.25rem;
+  }
+  &__progress-fill {
+    height: 100%;
+    width: 0%;
+    background: repeating-linear-gradient(
+      90deg,
+      var(--pixel-success),
+      var(--pixel-success) 6px,
+      #4aae6e 6px,
+      #4aae6e 12px
+    );
+    transition: width 0.2s steps(10);
+  }
+  &__progress-text {
+    font-size: 0.7rem;
+    color: var(--pixel-text-dim);
+  }
+  &__footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 0.75rem;
+  }
+  &__streak {
+    font-size: 0.7rem;
+    color: var(--pixel-gold);
+  }
+  &__completed {
+    font-size: 0.8rem;
+    color: var(--pixel-success);
+  }
+}
+
+// Modal
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.8);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 2000;
+  backdrop-filter: blur(2px);
+}
+
+.modal {
+  width: 90%;
+  max-width: 450px;
+  background: var(--pixel-card);
+  border: 4px solid var(--pixel-border);
+  box-shadow: 8px 8px 0 rgba(0, 0, 0, 0.5);
+  &__header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1rem;
+    border-bottom: 2px solid var(--pixel-border);
+    h3 {
+      margin: 0;
+    }
+  }
+  &__close {
+    background: none;
+    border: none;
+    font-size: 1.2rem;
+    cursor: pointer;
+    color: var(--pixel-text);
+    &:hover {
+      color: var(--pixel-primary);
+    }
+  }
+  &__body {
+    padding: 1rem;
+  }
+  &__field {
+    margin-bottom: 1rem;
+    label {
+      display: block;
+      font-size: 0.8rem;
+      margin-bottom: 0.25rem;
+    }
+  }
+  &__footer {
+    display: flex;
+    justify-content: flex-end;
+    gap: 0.75rem;
+    padding: 1rem;
+    border-top: 2px solid var(--pixel-border);
+  }
+}
+
+// Pixel Input
+.pixel-input {
+  background: #1a0b2e;
+  border: 2px solid var(--pixel-border);
+  padding: 0.5rem;
+  font-family: 'Courier New', monospace;
+  color: var(--pixel-text);
+  width: 100%;
+  font-size: 0.9rem;
+  &:focus {
+    outline: none;
+    border-color: var(--pixel-primary);
+  }
+  &--textarea {
+    resize: vertical;
+  }
+}
+
+// Responsive
+@media (max-width: 768px) {
+  .lobby__header {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .lobby__quests-grid {
+    grid-template-columns: 1fr;
+  }
+  .quest-card {
+    flex-direction: column;
+    text-align: center;
+    &__icon {
+      align-self: center;
+    }
+  }
+  .lobby__forge {
+    flex-direction: column;
+    text-align: center;
+  }
+}
+// Add to lobby.scss - icon grid for quest creation
+
+.modal__row {
+  display: flex;
+  gap: 1rem;
+  flex-wrap: wrap;
+  .modal__field {
+    flex: 1;
+  }
+}
+
+.modal__icon-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: 0.25rem;
+}
+
+.modal__icon-btn {
+  width: 48px;
+  height: 48px;
+  font-size: 1.5rem;
+  background: var(--pixel-bg);
+  border: 2px solid var(--pixel-border);
+  cursor: pointer;
+  transition: all 0.05s linear;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  
+  &:hover {
+    transform: translate(2px, 2px);
+  }
+  
+  &.active {
+    border-color: var(--pixel-primary);
+    background: var(--pixel-primary);
+    box-shadow: 0 0 0 2px var(--pixel-border);
+  }
+}

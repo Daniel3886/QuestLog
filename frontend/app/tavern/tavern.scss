@@ -1,0 +1,532 @@
+// app/tavern/tavern.scss
+
+.tavern {
+  min-height: 100vh;
+  padding: 1rem 0;
+  position: relative;
+
+  &__particles {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-image: repeating-linear-gradient(
+      45deg,
+      rgba(255, 204, 0, 0.02) 0px,
+      rgba(255, 204, 0, 0.02) 2px,
+      transparent 2px,
+      transparent 8px
+    );
+    pointer-events: none;
+    z-index: -1;
+  }
+
+  // Hero Banner
+  &__hero {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 2rem;
+    background: linear-gradient(135deg, var(--pixel-card), #3a2a4e);
+    padding: 2rem;
+    margin-bottom: 2rem;
+    border: 4px solid var(--pixel-border);
+    box-shadow: 6px 6px 0 rgba(0, 0, 0, 0.3);
+  }
+
+  &__hero-content {
+    flex: 2;
+  }
+
+  &__hero-text {
+    color: var(--pixel-text-dim);
+    margin-top: 0.5rem;
+    font-size: 1rem;
+  }
+
+  &__hero-stats {
+    display: flex;
+    gap: 1.5rem;
+  }
+
+  &__stat {
+    text-align: center;
+    background: rgba(0, 0, 0, 0.3);
+    padding: 0.75rem 1.25rem;
+    border: 2px solid var(--pixel-border);
+    
+    &-value {
+      display: block;
+      font-size: 2rem;
+      font-weight: bold;
+      color: var(--pixel-primary);
+    }
+    
+    &-label {
+      font-size: 0.7rem;
+      color: var(--pixel-text-dim);
+    }
+  }
+
+  // Sections
+  &__section {
+    margin: 3rem 0;
+  }
+
+  &__section-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    flex-wrap: wrap;
+    margin-bottom: 1.5rem;
+  }
+
+  &__section-sub {
+    font-size: 0.8rem;
+    color: var(--pixel-text-dim);
+  }
+
+  // Filters
+  &__filters {
+    display: flex;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+    padding: 1rem;
+    background: var(--pixel-bg-light);
+    border: 2px solid var(--pixel-border);
+  }
+
+  &__filter-group {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+  }
+
+  &__filter-label {
+    font-size: 0.8rem;
+    color: var(--pixel-text-dim);
+  }
+
+  &__filter-buttons {
+    display: flex;
+    gap: 0.5rem;
+  }
+
+  &__filter-btn {
+    background: var(--pixel-bg);
+    border: 2px solid var(--pixel-border);
+    padding: 0.25rem 0.75rem;
+    font-family: inherit;
+    font-size: 0.8rem;
+    cursor: pointer;
+    transition: all 0.05s linear;
+    color: var(--pixel-text);
+    
+    &:hover {
+      transform: translate(1px, 1px);
+    }
+    
+    &.active {
+      background: var(--pixel-primary);
+      border-color: var(--pixel-border);
+      color: #1a0b2e;
+    }
+  }
+
+  // Grids
+  &__events-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+    gap: 1.5rem;
+  }
+
+  &__quests-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(380px, 1fr));
+    gap: 1.5rem;
+  }
+
+  // Comments
+  &__comments {
+    margin-top: 1rem;
+  }
+
+  &__comment-input {
+    display: flex;
+    gap: 1rem;
+    align-items: flex-start;
+    padding: 1rem;
+    margin-bottom: 1.5rem;
+  }
+
+  &__comment-avatar {
+    font-size: 2.5rem;
+  }
+
+  &__comment-textarea {
+    flex: 1;
+  }
+
+  &__comments-list {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+  }
+}
+
+// Event Card
+.event-card {
+  padding: 1rem;
+  transition: all 0.1s steps(2);
+  
+  &:hover {
+    transform: translateY(-4px);
+  }
+  
+  &__header {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    margin-bottom: 0.75rem;
+  }
+  
+  &__icon {
+    font-size: 3rem;
+  }
+  
+  &__info {
+    flex: 1;
+    h3 {
+      margin: 0;
+      font-size: 1.1rem;
+    }
+  }
+  
+  &__status {
+    font-size: 0.7rem;
+    font-weight: bold;
+  }
+  
+  &__description {
+    font-size: 0.85rem;
+    color: var(--pixel-text-dim);
+    margin-bottom: 1rem;
+  }
+  
+  &__progress {
+    margin-bottom: 1rem;
+  }
+  
+  &__progress-bar {
+    background: #2a1a3e;
+    border: 2px solid var(--pixel-border);
+    height: 16px;
+  }
+  
+  &__progress-fill {
+    height: 100%;
+    width: 0%;
+    background: repeating-linear-gradient(
+      90deg,
+      var(--pixel-secondary),
+      var(--pixel-secondary) 8px,
+      #00a0c0 8px,
+      #00a0c0 16px
+    );
+    transition: width 0.3s steps(10);
+  }
+  
+  &__progress-stats {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.7rem;
+    margin-top: 0.25rem;
+    color: var(--pixel-text-dim);
+  }
+  
+  &__details {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    margin-bottom: 1rem;
+  }
+  
+  &__detail {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.8rem;
+    color: var(--pixel-text-dim);
+  }
+}
+
+// Quest Card (Tavern version)
+.quest-card {
+  display: flex;
+  gap: 1rem;
+  padding: 1rem;
+  transition: all 0.1s steps(2);
+  
+  &:hover {
+    transform: translateY(-4px);
+  }
+  
+  &__icon {
+    font-size: 3rem;
+    background: rgba(0, 0, 0, 0.3);
+    padding: 0.5rem;
+    border: 2px solid var(--pixel-border);
+    height: fit-content;
+  }
+  
+  &__content {
+    flex: 1;
+  }
+  
+  &__header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.5rem;
+    h3 {
+      margin: 0;
+      font-size: 1rem;
+    }
+  }
+  
+  &__difficulty {
+    font-size: 0.7rem;
+    font-weight: bold;
+  }
+  
+  &__description {
+    font-size: 0.8rem;
+    color: var(--pixel-text-dim);
+    margin-bottom: 0.5rem;
+  }
+  
+  &__meta {
+    display: flex;
+    gap: 0.75rem;
+    font-size: 0.7rem;
+    margin-bottom: 0.5rem;
+    color: var(--pixel-text-dim);
+  }
+  
+  &__stats {
+    display: flex;
+    gap: 1rem;
+    font-size: 0.7rem;
+    color: var(--pixel-text-dim);
+    margin-bottom: 0.75rem;
+  }
+}
+
+// Comment Card
+.comment-card {
+  display: flex;
+  gap: 1rem;
+  padding: 1rem;
+  
+  &__avatar {
+    font-size: 2rem;
+  }
+  
+  &__content {
+    flex: 1;
+  }
+  
+  &__header {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    flex-wrap: wrap;
+    margin-bottom: 0.25rem;
+  }
+  
+  &__name {
+    font-weight: bold;
+    font-size: 0.9rem;
+  }
+  
+  &__date {
+    font-size: 0.7rem;
+    color: var(--pixel-text-dim);
+  }
+  
+  &__text {
+    font-size: 0.85rem;
+    color: var(--pixel-text);
+  }
+}
+
+// Modal (reuse from lobby, add large variant)
+// app/tavern/tavern.scss (add/update these styles)
+
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.85);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10000;  // Increased to be above everything
+  cursor: pointer;
+}
+
+.modal {
+  position: relative;  // Not fixed - relative to overlay
+  max-width: 450px;
+  width: 90%;
+  background: var(--pixel-card);
+  border: 4px solid var(--pixel-border);
+  box-shadow: 8px 8px 0 rgba(0, 0, 0, 0.5);
+  cursor: default;
+  max-height: 90vh;
+  overflow-y: auto;
+  
+  &--large {
+    max-width: 600px;
+  }
+  
+  &__header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1rem;
+    border-bottom: 2px solid var(--pixel-border);
+    
+    h3 {
+      margin: 0;
+      font-size: 1.2rem;
+    }
+  }
+  
+  &__close {
+    background: none;
+    border: none;
+    font-size: 1.2rem;
+    cursor: pointer;
+    color: var(--pixel-text);
+    
+    &:hover {
+      color: var(--pixel-primary);
+    }
+  }
+  
+  &__body {
+    padding: 1rem;
+  }
+  
+  &__field {
+    margin-bottom: 1rem;
+    
+    label {
+      display: block;
+      font-size: 0.8rem;
+      margin-bottom: 0.25rem;
+      color: var(--pixel-text-dim);
+    }
+  }
+  
+  &__row {
+    display: flex;
+    gap: 1rem;
+    flex-wrap: wrap;
+    
+    .modal__field {
+      flex: 1;
+    }
+  }
+  
+  &__icon-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin-top: 0.25rem;
+  }
+  
+  &__icon-btn {
+    width: 48px;
+    height: 48px;
+    font-size: 1.5rem;
+    background: var(--pixel-bg);
+    border: 2px solid var(--pixel-border);
+    cursor: pointer;
+    transition: all 0.05s linear;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    
+    &:hover {
+      transform: translate(2px, 2px);
+    }
+    
+    &.active {
+      border-color: var(--pixel-primary);
+      background: var(--pixel-primary);
+      box-shadow: 0 0 0 2px var(--pixel-border);
+    }
+  }
+  
+  &__footer {
+    display: flex;
+    justify-content: flex-end;
+    gap: 0.75rem;
+    padding: 1rem;
+    border-top: 2px solid var(--pixel-border);
+  }
+  
+  &__reward {
+    background: var(--pixel-bg-light);
+    padding: 0.75rem;
+    margin-top: 1rem;
+    border: 2px solid var(--pixel-gold);
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.9rem;
+  }
+}
+
+// Responsive
+@media (max-width: 768px) {
+  .tavern__hero {
+    flex-direction: column;
+    text-align: center;
+  }
+  
+  .tavern__events-grid,
+  .tavern__quests-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .quest-card {
+    flex-direction: column;
+    text-align: center;
+    
+    &__icon {
+      align-self: center;
+    }
+  }
+  
+  .tavern__filters {
+    flex-direction: column;
+  }
+  
+  .event-card__detail {
+    flex-direction: column;
+    gap: 0.25rem;
+  }
+  
+  .modal__row {
+    flex-direction: column;
+  }
+}
