@@ -3,9 +3,10 @@ import { AuthModule } from './auth/auth.module';
 import { UsersModule } from './users/users.module';
 import { DatabaseService } from './database/database.service';
 import { DatabaseModule } from './database/database.module';
+import { QuestsModule } from './quests/quests.module';
 
 @Module({
-  imports: [AuthModule, UsersModule, DatabaseModule],
+  imports: [AuthModule, UsersModule, DatabaseModule, QuestsModule],
   providers: [DatabaseService],
 })
 export class AppModule {}

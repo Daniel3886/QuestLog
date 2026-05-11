@@ -9,9 +9,75 @@ datasource db {
 }
 
 model User {
-  id        String   @id @default(uuid())
-  email     String   @unique
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id        String     @id @default(uuid())
+  email     String     @unique
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
   password  String
+  quests    Quest[]    @relation("QuestCreator")
+  questLogs QuestLog[] @relation("QuestLogger")
+}
+
+model Quest {
+  id            String             @id @default(uuid())
+  creatorId     String             @map("creator_id")
+  title         String
+  description   String?
+  trackingType  QuestTrackingType  @default(NUMERIC) @map("tracking_type")
+  targetValue   Float              @default(1) @map("target_value")
+  unit          String?
+  proofRequired QuestProofRequired @default(NONE) @map("proof_required")
+  frequency     QuestFrequency     @default(DAILY)
+  createdAt     DateTime           @default(now()) @map("created_at")
+  updatedAt     DateTime           @updatedAt @map("updated_at")
+  creator       User               @relation("QuestCreator", fields: [creatorId], references: [id], onDelete: Cascade)
+  logs          QuestLog[]
+
+  @@index([creatorId])
+  @@map("quests")
+}
+
+model QuestLog {
+  id           String       @id @default(uuid())
+  userId       String       @map("user_id")
+  questId      String       @map("quest_id")
+  logDate      DateTime     @map("log_date")
+  currentValue Float        @default(0) @map("current_value")
+  rating       QuestRating?
+  note         String?
+  proofUrl     String?      @map("proof_url")
+  loggedAt     DateTime     @default(now()) @map("logged_at")
+  updatedAt    DateTime     @updatedAt @map("updated_at")
+  quest        Quest        @relation(fields: [questId], references: [id], onDelete: Cascade)
+  user         User         @relation("QuestLogger", fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([questId, logDate])
+  @@index([userId])
+  @@index([questId])
+  @@index([loggedAt])
+  @@map("quest_logs")
+}
+
+enum QuestFrequency {
+  DAILY
+  WEEKLY
+  CUSTOM
+}
+
+enum QuestTrackingType {
+  BINARY
+  NUMERIC
+  TIMER
+}
+
+enum QuestProofRequired {
+  NONE
+  IMAGE
+  TEXT
+}
+
+enum QuestRating {
+  ENERGIZED
+  OKAY
+  SLOG
 }
