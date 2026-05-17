@@ -1,4 +1,4 @@
-import { QuestRating } from '@prisma/client';
+import { $Enums } from '@prisma/client';
 import {
   IsDateString,
   IsEnum,
@@ -23,9 +23,9 @@ export class UpdateQuestProgressDto {
   @IsOptional()
   incrementBy?: number;
 
-  @IsEnum(QuestRating)
+  @IsEnum($Enums.QuestRating)
   @IsOptional()
-  rating?: QuestRating;
+  rating?: $Enums.QuestRating;
 
   @IsString()
   @IsOptional()
