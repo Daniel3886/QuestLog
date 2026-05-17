@@ -7,6 +7,5 @@ import { QuestsModule } from './quests/quests.module';
 
 @Module({
   imports: [AuthModule, UsersModule, DatabaseModule, QuestsModule],
-  providers: [DatabaseService],
 })
 export class AppModule {}
