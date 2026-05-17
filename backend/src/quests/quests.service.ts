@@ -5,7 +5,7 @@ import { UpdateQuestProgressDto } from './dto/update-quest-progress.dto';
 import { UpdateQuestDto } from './dto/update-quest.dto';
 import { QuestProgressService } from './quest-progress.service';
 import { QuestStatsService } from './quest-stats.service';
-import { CreateQuestInput } from './type/quest-service.types';
+import { CreateQuestDto } from './dto/create-quest.dto';
 
 @Injectable()
 export class QuestsService {
@@ -15,7 +15,7 @@ export class QuestsService {
     private readonly stats: QuestStatsService,
   ) {}
 
-  async createQuest({ creatorId, dto }: CreateQuestInput) {
+  async createQuest(creatorId: Quest['creatorId'], dto: CreateQuestDto) {
     const data: Prisma.QuestUncheckedCreateInput = {
       creatorId,
       title: dto.title,

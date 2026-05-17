@@ -16,12 +16,7 @@ export class UpdateQuestProgressDto {
 
   @IsNumber()
   @Min(0)
-  @IsOptional()
-  currentValue?: number;
-
-  @IsNumber()
-  @IsOptional()
-  incrementBy?: number;
+  currentValue!: number;
 
   @IsEnum($Enums.QuestRating)
   @IsOptional()

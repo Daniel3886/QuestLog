@@ -23,7 +23,7 @@ export class QuestsController {
 
   @Post()
   createQuest(@User() user: AuthUser, @Body() dto: CreateQuestDto) {
-    return this.questsService.createQuest({ creatorId: user.id, dto });
+    return this.questsService.createQuest(user.id, dto);
   }
 
   @Get()
