@@ -22,45 +22,45 @@ export class QuestsController {
   constructor(private readonly questsService: QuestsService) {}
 
   @Post()
-  create(@User() user: AuthUser, @Body() dto: CreateQuestDto) {
-    return this.questsService.create(user.id, dto);
+  createQuest(@User() user: AuthUser, @Body() dto: CreateQuestDto) {
+    return this.questsService.createQuest({ creatorId: user.id, dto });
   }
 
   @Get()
-  findAll(@User() user: AuthUser) {
-    return this.questsService.findAll(user.id);
+  listQuests(@User() user: AuthUser) {
+    return this.questsService.listQuests(user.id);
   }
 
   @Get(':id')
-  findOne(@User() user: AuthUser, @Param('id') id: string) {
-    return this.questsService.findOne(user.id, id);
+  getQuest(@User() user: AuthUser, @Param('id') id: string) {
+    return this.questsService.getQuest(user.id, id);
   }
 
   @Patch(':id')
-  update(
+  updateQuest(
     @User() user: AuthUser,
     @Param('id') id: string,
     @Body() dto: UpdateQuestDto,
   ) {
-    return this.questsService.update(user.id, id, dto);
+    return this.questsService.updateQuest(user.id, id, dto);
   }
 
   @Patch(':id/progress')
-  updateProgress(
+  updateQuestProgress(
     @User() user: AuthUser,
     @Param('id') id: string,
     @Body() dto: UpdateQuestProgressDto,
   ) {
-    return this.questsService.updateProgress(user.id, id, dto);
+    return this.questsService.updateQuestProgress(user.id, id, dto);
   }
 
   @Post(':id/reset-today')
-  resetToday(@User() user: AuthUser, @Param('id') id: string) {
-    return this.questsService.resetToday(user.id, id);
+  resetQuestToday(@User() user: AuthUser, @Param('id') id: string) {
+    return this.questsService.resetQuestToday(user.id, id);
   }
 
   @Delete(':id')
-  remove(@User() user: AuthUser, @Param('id') id: string) {
-    return this.questsService.remove(user.id, id);
+  deleteQuest(@User() user: AuthUser, @Param('id') id: string) {
+    return this.questsService.deleteQuest(user.id, id);
   }
 }
