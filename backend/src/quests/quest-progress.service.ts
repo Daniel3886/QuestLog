@@ -1,14 +1,16 @@
 import { Injectable } from '@nestjs/common';
 import type { Prisma, Quest } from '@prisma/client';
 import { DatabaseService } from '../database/database.service';
+import { QuestDateService } from '../common/quest-date.service';
+import { UserProgressService } from '../users/user-progress.service';
 import { UpdateQuestProgressDto } from './dto/update-quest-progress.dto';
-import { QuestDateService } from './quest-date.service';
 
 @Injectable()
 export class QuestProgressService {
   constructor(
     private readonly database: DatabaseService,
     private readonly dates: QuestDateService,
+    private readonly userProgress: UserProgressService,
   ) {}
 
   async updateProgress(
@@ -18,6 +20,12 @@ export class QuestProgressService {
   ) {
     const logDate = this.dates.toUtcDay(dto.date);
     const currentValue = dto.currentValue;
+
+    const existing = await this.database.questLog.findUnique({
+      where: { questId_logDate: { questId: quest.id, logDate } },
+    });
+    const wasComplete =
+      (existing?.currentValue ?? 0) >= quest.targetValue;
 
     const create: Prisma.QuestLogUncheckedCreateInput = {
       userId,
@@ -40,10 +48,12 @@ export class QuestProgressService {
       update,
     });
 
-    return {
-      ...log,
-      isComplete: log.currentValue >= quest.targetValue,
-    };
+    const isComplete = log.currentValue >= quest.targetValue;
+    if (isComplete && !wasComplete) {
+      await this.userProgress.onPersonalQuestCompleted(userId);
+    }
+
+    return { ...log, isComplete };
   }
 
   async resetToday(
@@ -67,9 +77,6 @@ export class QuestProgressService {
       },
     });
 
-    return {
-      ...log,
-      isComplete: false,
-    };
+    return { ...log, isComplete: false };
   }
 }

@@ -1,7 +1,8 @@
 import { Injectable } from '@nestjs/common';
 import type { Quest } from '@prisma/client';
 import { DatabaseService } from '../database/database.service';
-import { QuestDateService } from './quest-date.service';
+import { QuestDateService } from '../common/quest-date.service';
+import { formatQuestForLobby } from './quest-format.util';
 
 @Injectable()
 export class QuestStatsService {
@@ -15,18 +16,23 @@ export class QuestStatsService {
     const todayLog = await this.database.questLog.findUnique({
       where: { questId_logDate: { questId: quest.id, logDate: today } },
     });
+    const todayProgress = todayLog?.currentValue ?? 0;
+    const todayComplete = todayProgress >= quest.targetValue;
     const currentStreak = await this.calculateCurrentStreak(
       quest.id,
       quest.targetValue,
       today,
     );
 
+    const stats = { todayProgress, todayComplete, currentStreak };
+
     return {
       ...quest,
-      todayProgress: todayLog?.currentValue ?? 0,
+      todayProgress,
       todayTarget: quest.targetValue,
-      todayComplete: (todayLog?.currentValue ?? 0) >= quest.targetValue,
+      todayComplete,
       currentStreak,
+      lobby: formatQuestForLobby(quest, stats),
     };
   }
 

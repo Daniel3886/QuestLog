@@ -1,16 +1,15 @@
 import {
   IsEnum,
-  IsNumber,
   IsNotEmpty,
+  IsNumber,
   IsOptional,
   IsString,
   MaxLength,
   Min,
 } from 'class-validator';
-
 import { $Enums } from '@prisma/client';
 
-export class CreateQuestDto {
+export class CreatePublicQuestDto {
   @IsString()
   @IsNotEmpty()
   @MaxLength(120)
@@ -20,6 +19,18 @@ export class CreateQuestDto {
   @IsOptional()
   @MaxLength(500)
   description?: string;
+
+  @IsString()
+  @IsOptional()
+  @MaxLength(8)
+  icon?: string;
+
+  @IsEnum($Enums.QuestCategory)
+  category!: $Enums.QuestCategory;
+
+  @IsEnum($Enums.QuestDifficulty)
+  @IsOptional()
+  difficulty?: $Enums.QuestDifficulty;
 
   @IsEnum($Enums.QuestTrackingType)
   @IsOptional()
@@ -33,17 +44,4 @@ export class CreateQuestDto {
   @IsNumber()
   @Min(1)
   targetValue!: number;
-
-  @IsEnum($Enums.QuestProofRequired)
-  @IsOptional()
-  proofRequired?: $Enums.QuestProofRequired;
-
-  @IsEnum($Enums.QuestFrequency)
-  @IsOptional()
-  frequency?: $Enums.QuestFrequency;
-
-  @IsString()
-  @IsOptional()
-  @MaxLength(8)
-  icon?: string;
 }

@@ -1,19 +1,15 @@
 import { Module } from '@nestjs/common';
+import { CommonModule } from 'src/common/common.module';
 import { DatabaseModule } from 'src/database/database.module';
-import { QuestDateService } from './quest-date.service';
+import { UsersModule } from 'src/users/users.module';
 import { QuestProgressService } from './quest-progress.service';
 import { QuestStatsService } from './quest-stats.service';
 import { QuestsController } from './quests.controller';
 import { QuestsService } from './quests.service';
 
 @Module({
-  imports: [DatabaseModule],
+  imports: [DatabaseModule, CommonModule, UsersModule],
   controllers: [QuestsController],
-  providers: [
-    QuestsService,
-    QuestDateService,
-    QuestProgressService,
-    QuestStatsService,
-  ],
+  providers: [QuestsService, QuestProgressService, QuestStatsService],
 })
 export class QuestsModule {}
