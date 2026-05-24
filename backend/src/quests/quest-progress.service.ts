@@ -12,7 +12,6 @@ export class QuestProgressService {
   ) {}
 
   async updateProgress(
-    userId: Quest['creatorId'],
     quest: Pick<Quest, 'id' | 'targetValue'>,
     dto: UpdateQuestProgressDto,
   ) {
@@ -20,7 +19,6 @@ export class QuestProgressService {
     const currentValue = dto.currentValue;
 
     const create: Prisma.QuestLogUncheckedCreateInput = {
-      userId,
       questId: quest.id,
       logDate,
       currentValue,
@@ -46,15 +44,11 @@ export class QuestProgressService {
     };
   }
 
-  async resetToday(
-    userId: Quest['creatorId'],
-    quest: Pick<Quest, 'id' | 'targetValue'>,
-  ) {
+  async resetToday(quest: Pick<Quest, 'id' | 'targetValue'>) {
     const logDate = this.dates.toUtcDay();
     const log = await this.database.questLog.upsert({
       where: { questId_logDate: { questId: quest.id, logDate } },
       create: {
-        userId,
         questId: quest.id,
         logDate,
         currentValue: 0,

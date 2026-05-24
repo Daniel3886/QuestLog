@@ -75,7 +75,7 @@ export class QuestsService {
     dto: UpdateQuestProgressDto,
   ) {
     const quest = await this.getOwnedQuestById(userId, id);
-    const log = await this.progress.updateProgress(userId, quest, dto);
+    const log = await this.progress.updateProgress(quest, dto);
 
     return {
       quest: await this.stats.withStats(quest),
@@ -85,7 +85,7 @@ export class QuestsService {
 
   async resetQuestToday(userId: Quest['creatorId'], id: Quest['id']) {
     const quest = await this.getOwnedQuestById(userId, id);
-    const log = await this.progress.resetToday(userId, quest);
+    const log = await this.progress.resetToday(quest);
 
     return {
       quest: await this.stats.withStats(quest),
