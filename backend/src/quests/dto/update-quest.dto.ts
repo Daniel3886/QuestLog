@@ -1,3 +1,4 @@
+import { $Enums } from '@prisma/client';
 import {
   IsEnum,
   IsNumber,
@@ -6,12 +7,6 @@ import {
   MaxLength,
   Min,
 } from 'class-validator';
-import {
-  QuestFrequency,
-  QuestProofRequired,
-  QuestTrackingType,
-} from '@prisma/client';
-
 export class UpdateQuestDto {
   @IsString()
   @IsOptional()
@@ -23,9 +18,9 @@ export class UpdateQuestDto {
   @MaxLength(500)
   description?: string;
 
-  @IsEnum(QuestTrackingType)
+  @IsEnum($Enums.QuestTrackingType)
   @IsOptional()
-  trackingType?: QuestTrackingType;
+  trackingType?: $Enums.QuestTrackingType;
 
   @IsString()
   @IsOptional()
@@ -37,11 +32,11 @@ export class UpdateQuestDto {
   @IsOptional()
   targetValue?: number;
 
-  @IsEnum(QuestProofRequired)
+  @IsEnum($Enums.QuestProofRequired)
   @IsOptional()
-  proofRequired?: QuestProofRequired;
+  proofRequired?: $Enums.QuestProofRequired;
 
-  @IsEnum(QuestFrequency)
+  @IsEnum($Enums.QuestFrequency)
   @IsOptional()
-  frequency?: QuestFrequency;
+  frequency?: $Enums.QuestFrequency;
 }

@@ -26,7 +26,7 @@ CREATE TABLE "quest_logs" (
     "id" TEXT NOT NULL,
     "user_id" TEXT NOT NULL,
     "quest_id" TEXT NOT NULL,
-    "log_date" TIMESTAMP(3) NOT NULL,
+    "log_date" DATE NOT NULL,
     "current_value" DOUBLE PRECISION NOT NULL DEFAULT 0,
     "rating" "QuestRating",
     "note" TEXT,
