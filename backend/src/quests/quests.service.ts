@@ -100,7 +100,10 @@ export class QuestsService {
     return { deleted: true };
   }
 
-  private async getOwnedQuestById(creatorId: Quest['creatorId'], id: Quest['id']) {
+  private async getOwnedQuestById(
+    creatorId: Quest['creatorId'],
+    id: Quest['id'],
+  ) {
     const quest = await this.database.quest.findFirst({
       where: { id, creatorId },
     });
