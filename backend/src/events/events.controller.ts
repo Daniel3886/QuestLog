@@ -4,14 +4,19 @@ import { User } from 'src/auth/decorators/user.decorator';
 import type { AuthUser } from 'src/auth/types/auth-user.type';
 import { ContributeEventDto } from './dto/contribute-event.dto';
 import { EventsService } from './events.service';
+import { mockEvents } from '../mock-data';
 
 @Controller('events')
 export class EventsController {
   constructor(private readonly eventsService: EventsService) {}
 
+  // @Get()
+  // listEvents() {
+  //   return this.eventsService.listEvents();
+  // }
   @Get()
-  listEvents() {
-    return this.eventsService.listEvents();
+  async listEvents() {
+    return mockEvents;
   }
 
   @Get(':id')

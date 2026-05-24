@@ -158,30 +158,56 @@ export class QuestsService {
     }
   }
 
-  async createPublicQuest(creatorId: string, dto: CreatePublicQuestDto) {
-    await this.assertPublicQuestCreationLimit(creatorId);
+ async createPublicQuest(creatorId: string, dto: CreatePublicQuestDto) {
+  await this.assertPublicQuestCreationLimit(creatorId);
 
-    const quest = await this.database.quest.create({
-      data: {
-        creatorId,
-        type: $Enums.QuestType.PUBLIC,
-        title: dto.title,
-        description: dto.description,
-        icon: dto.icon ?? '⚔️',
-        category: dto.category,
-        difficulty: dto.difficulty ?? $Enums.QuestDifficulty.MEDIUM,
-        trackingType: dto.trackingType,
-        unit: dto.unit,
-        targetValue: dto.targetValue,
-      },
-      include: {
-        creator: { select: { username: true, avatar: true } },
-        _count: { select: { personalQuests: true } },
-      },
-    });
+  // Map frontend UPPERCASE strings to Prisma enums
+  const categoryMap: Record<string, $Enums.QuestCategory> = {
+    FITNESS: 'FITNESS',
+    EDUCATION: 'EDUCATION',
+    CREATIVITY: 'CREATIVITY',
+    WELLNESS: 'WELLNESS',
+    OTHER: 'OTHER',
+  };
 
-    return formatPublicQuest(quest);
-  }
+  const difficultyMap: Record<string, $Enums.QuestDifficulty> = {
+    EASY: 'EASY',
+    MEDIUM: 'MEDIUM',
+    HARD: 'HARD',
+  };
+
+  const trackingMap: Record<string, $Enums.QuestTrackingType> = {
+    BINARY: 'BINARY',
+    NUMERIC: 'NUMERIC',
+    TIMER: 'TIMER',
+  };
+
+  // Safe mapping with defaults
+  const category = dto.category ? categoryMap[dto.category] : 'OTHER';
+  const difficulty = dto.difficulty ? difficultyMap[dto.difficulty] : 'MEDIUM';
+  const trackingType = dto.trackingType ? trackingMap[dto.trackingType] : 'BINARY';
+
+  const quest = await this.database.quest.create({
+    data: {
+      creatorId,
+      type: $Enums.QuestType.PUBLIC,
+      title: dto.title,
+      description: dto.description,
+      icon: dto.icon ?? '⚔️',
+      category,
+      difficulty,
+      trackingType,
+      unit: dto.unit,
+      targetValue: dto.targetValue,
+    },
+    include: {
+      creator: { select: { username: true, avatar: true } },
+      _count: { select: { personalQuests: true } },
+    },
+  });
+
+  return formatPublicQuest(quest);
+}
 
   async joinPublicQuest(userId: string, questId: string) {
     const quest = await this.database.quest.findFirst({

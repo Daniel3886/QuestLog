@@ -25,16 +25,17 @@ export class CreatePublicQuestDto {
   @MaxLength(8)
   icon?: string;
 
-  @IsEnum($Enums.QuestCategory)
-  category!: $Enums.QuestCategory;
+  @IsString()
+  @IsNotEmpty()
+  category!: string;
 
-  @IsEnum($Enums.QuestDifficulty)
+  @IsString()
   @IsOptional()
-  difficulty?: $Enums.QuestDifficulty;
+  difficulty?: string;
 
-  @IsEnum($Enums.QuestTrackingType)
-  @IsOptional()
-  trackingType?: $Enums.QuestTrackingType;
+  @IsString()
+  @IsNotEmpty()
+  trackingType?: string;
 
   @IsString()
   @IsOptional()

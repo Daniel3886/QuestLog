@@ -1,0 +1,86 @@
+// src/mock-data.ts
+
+export const mockEvents = [
+  {
+    id: '1',
+    title: '🔥 Dragon Hunt',
+    description: 'Run collectively 10,000 km to defeat the dragon.',
+    icon: '🐉',
+    currentValue: 6780,
+    targetValue: 10000,
+    unit: 'km',
+    endDate: new Date(Date.now() + 7 * 86400000).toISOString(),
+    participants: 1247,
+    rewardCoins: 500,
+    rewardXp: 100,
+    rewardItemName: 'Dragon Slayer Badge',
+    status: 'active',
+  },
+  {
+    id: '2',
+    title: '📚 Library Crusade',
+    description: 'Read 50,000 pages together.',
+    icon: '📖',
+    currentValue: 31200,
+    targetValue: 50000,
+    unit: 'pages',
+    endDate: new Date(Date.now() + 3 * 86400000).toISOString(),
+    participants: 892,
+    rewardCoins: 300,
+    rewardXp: 75,
+    rewardItemName: 'Sage Scroll',
+    status: 'active',
+  },
+];
+
+export const mockPublicQuests = [
+  {
+    id: '1',
+    title: '30-Day Drawing Challenge',
+    description: 'Create one sketch every day for 30 days.',
+    icon: '✏️',
+    category: 'creativity',
+    difficulty: 'medium',
+    trackingType: 'binary',
+    targetValue: 30,
+    unit: 'days',
+    participants: 342,
+    rating: 4.8,
+    author: 'Artemis',
+    authorAvatar: '🎨',
+    createdAt: new Date().toISOString(),
+  },
+  {
+    id: '2',
+    title: 'Couch to 5K',
+    description: 'Complete the running program.',
+    icon: '🏃',
+    category: 'fitness',
+    difficulty: 'medium',
+    trackingType: 'binary',
+    targetValue: 1,
+    unit: 'program',
+    participants: 567,
+    rating: 4.9,
+    author: 'RunnerJoe',
+    authorAvatar: '🏃',
+    createdAt: new Date().toISOString(),
+  },
+];
+
+export const mockComments = [
+  {
+    id: '1',
+    userName: 'ShadowBlade',
+    userAvatar: '🗡️',
+    content: 'This event is awesome! Already ran 45km this week!',
+    createdAt: new Date().toISOString(),
+  },
+  {
+    id: '2',
+    userName: 'MageLena',
+    userAvatar: '✨',
+    content: 'The Dragon Hunt is so motivating. Let\'s go everyone! 🔥',
+    createdAt: new Date(Date.now() - 86400000).toISOString(),
+  },
+];

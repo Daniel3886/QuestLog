@@ -18,6 +18,8 @@ import { CreateQuestDto } from './dto/create-quest.dto';
 import { UpdateQuestDto } from './dto/update-quest.dto';
 import { UpdateQuestProgressDto } from './dto/update-quest-progress.dto';
 import { QuestsService } from './quests.service';
+import { mockPublicQuests } from '../mock-data';
+
 
 @Controller('quests')
 export class QuestsController {
@@ -30,6 +32,26 @@ export class QuestsController {
   ) {
     return this.questsService.listPublicQuests(category, sort);
   }
+
+//   @Get('public')
+// async listPublicQuests(@Query('sort') sort?: string) {
+//   let result = [...mockPublicQuests];
+  
+//   if (sort === 'popular') {
+//     result.sort((a, b) => b.participants - a.participants);
+//   } else if (sort === 'newest') {
+//     result.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+//   } else if (sort === 'difficulty') {
+//     const difficultyOrder: Record<string, number> = { easy: 1, medium: 2, hard: 3 };
+//     result.sort((a, b) => {
+//       const aOrder = difficultyOrder[a.difficulty] ?? 999;
+//       const bOrder = difficultyOrder[b.difficulty] ?? 999;
+//       return aOrder - bOrder;
+//     });
+//   }
+  
+//   return result;
+// }
 
   @UseGuards(JwtAuthGuard)
   @Post('public')

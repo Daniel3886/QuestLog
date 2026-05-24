@@ -1,121 +1,27 @@
-// app/lobby/page.tsx
-"use client";
+'use client';
 
-import React, { useState } from 'react';
-import Link from 'next/link';
+import React, { useCallback, useEffect, useState } from 'react';
+import { ApiError, questsApi, usersApi } from '@/lib/api';
+import { frequencyMap, trackingMap } from '@/lib/enums';
+import { useRequireAuth } from '@/hooks/useRequireAuth';
+import type { LobbyQuest, UserProfile } from '@/lib/types';
+import ErrorBanner from '@/components/ErrorBanner';
 import './lobby.scss';
 
-// Types
-interface Quest {
-  id: string;
-  title: string;
-  description: string;
-  type: 'daily' | 'weekly' | 'custom';
-  trackingType: 'binary' | 'numeric' | 'timer';
-  targetValue: number;
-  currentValue: number;
-  unit: string;
-  streak: number;
-  icon: string;
-}
-
-interface UserStats {
-  level: number;
-  xp: number;
-  xpNext: number;
-  coins: number;
-  streak: number;
-  weekStreak: number;
-  totalQuests: number;
-  completedToday: number;
-}
-
-// Mock data
-const mockUser: UserStats = {
-  level: 7,
-  xp: 342,
-  xpNext: 500,
-  coins: 1250,
-  streak: 23,
-  weekStreak: 6,
-  totalQuests: 47,
-  completedToday: 2,
-};
-
-const mockQuests: Quest[] = [
-  {
-    id: '1',
-    title: 'Morning Run',
-    description: 'Go for a 30-minute run',
-    type: 'daily',
-    trackingType: 'numeric',
-    targetValue: 3,
-    currentValue: 0,
-    unit: 'km',
-    streak: 12,
-    icon: '🏃',
-  },
-  {
-    id: '2',
-    title: 'Read Daily',
-    description: 'Read 20 pages of any book',
-    type: 'daily',
-    trackingType: 'numeric',
-    targetValue: 20,
-    currentValue: 0,
-    unit: 'pages',
-    streak: 8,
-    icon: '📚',
-  },
-  {
-    id: '3',
-    title: 'Meditate',
-    description: '10 minutes of mindfulness',
-    type: 'daily',
-    trackingType: 'timer',
-    targetValue: 10,
-    currentValue: 0,
-    unit: 'min',
-    streak: 21,
-    icon: '🧘',
-  },
-  {
-    id: '4',
-    title: 'Weekly Workout',
-    description: 'Complete 5 workouts this week',
-    type: 'weekly',
-    trackingType: 'numeric',
-    targetValue: 5,
-    currentValue: 2,
-    unit: 'workouts',
-    streak: 3,
-    icon: '💪',
-  },
-  {
-    id: '5',
-    title: 'Learn Language',
-    description: 'Study 30 minutes of Spanish',
-    type: 'daily',
-    trackingType: 'timer',
-    targetValue: 30,
-    currentValue: 0,
-    unit: 'min',
-    streak: 4,
-    icon: '🗣️',
-  },
-];
-
-// Available icons for quest creation
 const availableIcons = ['🏃', '📚', '🧘', '💪', '🗣️', '🎨', '🎸', '🍳', '💧', '🌟'];
 
 export default function LobbyPage() {
-  const [quests, setQuests] = useState<Quest[]>(mockQuests);
-  const [selectedQuest, setSelectedQuest] = useState<Quest | null>(null);
+  const ready = useRequireAuth();
+  const [user, setUser] = useState<UserProfile | null>(null);
+  const [quests, setQuests] = useState<LobbyQuest[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+  const [selectedQuest, setSelectedQuest] = useState<LobbyQuest | null>(null);
   const [showForgeModal, setShowForgeModal] = useState(false);
-  const [logValue, setLogValue] = useState<string>('');
-  const [logNote, setLogNote] = useState<string>('');
-  
-  // New quest form state
+  const [logValue, setLogValue] = useState('');
+  const [logNote, setLogNote] = useState('');
+  const [submitting, setSubmitting] = useState(false);
+
   const [newQuest, setNewQuest] = useState({
     title: '',
     description: '',
@@ -126,123 +32,179 @@ export default function LobbyPage() {
     icon: '⚔️',
   });
 
-  const handleLogProgress = (quest: Quest) => {
+  const loadData = useCallback(async () => {
+    setError('');
+    try {
+      const [profile, questList] = await Promise.all([
+        usersApi.me(),
+        questsApi.listPersonal(),
+      ]);
+      setUser(profile);
+      setQuests(questList);
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : 'Failed to load lobby');
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (ready) {
+      loadData();
+    }
+  }, [ready, loadData]);
+
+  const handleLogProgress = (quest: LobbyQuest) => {
     setSelectedQuest(quest);
     setLogValue('');
     setLogNote('');
   };
 
-  const submitProgress = () => {
+  const submitProgress = async () => {
     if (!selectedQuest) return;
-    
-    const value = parseFloat(logValue);
-    if (isNaN(value)) return;
-    
-    setQuests(prev => prev.map(q => {
-      if (q.id === selectedQuest.id) {
-        const newCurrent = Math.min(q.currentValue + value, q.targetValue);
-        return { ...q, currentValue: newCurrent };
-      }
-      return q;
-    }));
-    
-    setSelectedQuest(null);
+    const increment = parseFloat(logValue);
+    if (Number.isNaN(increment)) return;
+
+    const newCurrent = Math.min(
+      selectedQuest.currentValue + increment,
+      selectedQuest.targetValue,
+    );
+
+    setSubmitting(true);
+    setError('');
+    try {
+      await questsApi.updateProgress(selectedQuest.id, {
+        currentValue: newCurrent,
+        note: logNote || undefined,
+      });
+      setSelectedQuest(null);
+      await loadData();
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : 'Failed to log progress');
+    } finally {
+      setSubmitting(false);
+    }
   };
 
-  const handleCreateQuest = () => {
-    const quest: Quest = {
-      id: Date.now().toString(),
-      title: newQuest.title,
-      description: newQuest.description,
-      type: newQuest.type,
-      trackingType: newQuest.trackingType,
-      targetValue: newQuest.targetValue,
-      currentValue: 0,
-      unit: newQuest.unit,
-      streak: 0,
-      icon: newQuest.icon,
-    };
-    
-    setQuests(prev => [quest, ...prev]);
-    setShowForgeModal(false);
-    setNewQuest({
-      title: '',
-      description: '',
-      type: 'daily',
-      trackingType: 'binary',
-      targetValue: 1,
-      unit: 'times',
-      icon: '⚔️',
-    });
+  const handleCreateQuest = async () => {
+    if (!newQuest.title.trim()) return;
+    setSubmitting(true);
+    setError('');
+    try {
+      await questsApi.createPersonal({
+        title: newQuest.title,
+        description: newQuest.description || undefined,
+        icon: newQuest.icon,
+        trackingType: trackingMap[newQuest.trackingType],
+        targetValue: newQuest.targetValue,
+        unit: newQuest.unit,
+        frequency: frequencyMap[newQuest.type],
+      });
+      setShowForgeModal(false);
+      setNewQuest({
+        title: '',
+        description: '',
+        type: 'daily',
+        trackingType: 'binary',
+        targetValue: 1,
+        unit: 'times',
+        icon: '⚔️',
+      });
+      await loadData();
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : 'Failed to create quest');
+    } finally {
+      setSubmitting(false);
+    }
   };
 
-  const calculateProgress = (quest: Quest): number => {
-    return (quest.currentValue / quest.targetValue) * 100;
-  };
+  if (!ready || loading) {
+    return <div className="lobby"><p>Loading lobby...</p></div>;
+  }
 
-  const getQuestStatusIcon = (quest: Quest): string => {
+  const calculateProgress = (quest: LobbyQuest) =>
+    (quest.currentValue / quest.targetValue) * 100;
+
+  const getQuestStatusIcon = (quest: LobbyQuest) => {
     if (quest.currentValue >= quest.targetValue) return '✅';
     if (quest.type === 'daily') return '🌞';
     if (quest.type === 'weekly') return '📅';
     return '⚔️';
   };
 
-  const getXpPercentage = () => (mockUser.xp / mockUser.xpNext) * 100;
+  const getXpPercentage = () =>
+    user ? (user.xp / user.xpNext) * 100 : 0;
+
+  const dailyQuestCount = quests.filter((q) => q.type === 'daily').length;
 
   return (
     <div className="lobby">
-      {/* Pixel particles background */}
       <div className="lobby__particles"></div>
+      <ErrorBanner message={error} onDismiss={() => setError('')} />
 
-      {/* Header with character stats */}
-      <div className="lobby__header">
-        <div className="lobby__character">
-          <div className="lobby__character-avatar">
-            <span className="lobby__character-sprite">🧙</span>
-            <div className="lobby__character-level">Lv.{mockUser.level}</div>
-          </div>
-          <div className="lobby__character-stats">
-            <div className="lobby__xp-bar">
-              <div className="lobby__xp-fill" style={{ width: `${getXpPercentage()}%` }}></div>
-              <span className="lobby__xp-text">{mockUser.xp}/{mockUser.xpNext} XP</span>
+      {user && (
+        <div className="lobby__header">
+          <div className="lobby__character">
+            <div className="lobby__character-avatar">
+              <span className="lobby__character-sprite">{user.avatar}</span>
+              <div className="lobby__character-level">Lv.{user.level}</div>
             </div>
-            <div className="lobby__stat-row">
-              <span className="lobby__stat">💰 {mockUser.coins} coins</span>
-              <span className="lobby__stat">🔥 {mockUser.streak} day streak</span>
-              <span className="lobby__stat">📆 {mockUser.weekStreak}/7 this week</span>
+            <div className="lobby__character-stats">
+              <div className="lobby__xp-bar">
+                <div
+                  className="lobby__xp-fill"
+                  style={{ width: `${getXpPercentage()}%` }}
+                ></div>
+                <span className="lobby__xp-text">
+                  {user.xp}/{user.xpNext} XP
+                </span>
+              </div>
+              <div className="lobby__stat-row">
+                <span className="lobby__stat">💰 {user.coins} coins</span>
+                <span className="lobby__stat">🔥 {user.streak} day streak</span>
+                <span className="lobby__stat">
+                  📆 {user.weekStreak}/7 this week
+                </span>
+              </div>
+            </div>
+          </div>
+
+          <div className="lobby__daily-summary">
+            <div className="lobby__daily-icon">📋</div>
+            <div className="lobby__daily-text">
+              <span className="lobby__daily-label">Today&apos;s Progress</span>
+              <span className="lobby__daily-value">
+                {user.completedToday}/{dailyQuestCount || user.dailyQuestCount}
+              </span>
             </div>
           </div>
         </div>
+      )}
 
-        <div className="lobby__daily-summary">
-          <div className="lobby__daily-icon">📋</div>
-          <div className="lobby__daily-text">
-            <span className="lobby__daily-label">Today's Progress</span>
-            <span className="lobby__daily-value">{mockUser.completedToday}/{quests.filter(q => q.type === 'daily').length}</span>
-          </div>
-        </div>
-      </div>
-
-      {/* Quests Header - removed duplicate button */}
       <div className="lobby__quests-header">
         <h2 className="pixel-heading">📜 ACTIVE QUESTS 📜</h2>
       </div>
 
       <div className="lobby__quests-grid">
+        {quests.length === 0 && (
+          <p>No quests yet. Forge your first quest below.</p>
+        )}
         {quests.map((quest) => (
           <div key={quest.id} className="quest-card pixel-card">
             <div className="quest-card__icon">{quest.icon}</div>
             <div className="quest-card__content">
               <div className="quest-card__header">
                 <h3>{quest.title}</h3>
-                <span className="quest-card__status">{getQuestStatusIcon(quest)}</span>
+                <span className="quest-card__status">
+                  {getQuestStatusIcon(quest)}
+                </span>
               </div>
               <p className="quest-card__description">{quest.description}</p>
-              
+
               <div className="quest-card__progress">
                 <div className="quest-card__progress-bar">
-                  <div 
-                    className="quest-card__progress-fill" 
+                  <div
+                    className="quest-card__progress-fill"
                     style={{ width: `${calculateProgress(quest)}%` }}
                   ></div>
                 </div>
@@ -252,10 +214,12 @@ export default function LobbyPage() {
               </div>
 
               <div className="quest-card__footer">
-                <span className="quest-card__streak">🔥 Streak: {quest.streak}</span>
+                <span className="quest-card__streak">
+                  🔥 Streak: {quest.streak}
+                </span>
                 {quest.currentValue < quest.targetValue ? (
-                  <button 
-                    className="pixel-btn pixel-btn--small" 
+                  <button
+                    className="pixel-btn pixel-btn--small"
                     onClick={() => handleLogProgress(quest)}
                   >
                     Log Progress
@@ -269,7 +233,6 @@ export default function LobbyPage() {
         ))}
       </div>
 
-      {/* Quest Forge - main creation area */}
       <div className="lobby__forge">
         <div className="lobby__forge-icon">⚒️</div>
         <div className="lobby__forge-text">
@@ -281,31 +244,40 @@ export default function LobbyPage() {
         </button>
       </div>
 
-      {/* Forge Modal (Create Quest) */}
       {showForgeModal && (
-        <div className="modal-overlay" onClick={() => setShowForgeModal(false)}>
+        <div
+          className="modal-overlay"
+          onClick={() => !submitting && setShowForgeModal(false)}
+        >
           <div className="modal pixel-card" onClick={(e) => e.stopPropagation()}>
             <div className="modal__header">
               <h3>⚒️ Forge New Quest</h3>
-              <button className="modal__close" onClick={() => setShowForgeModal(false)}>✖</button>
+              <button
+                className="modal__close"
+                onClick={() => setShowForgeModal(false)}
+              >
+                ✖
+              </button>
             </div>
             <div className="modal__body">
               <div className="modal__field">
                 <label>Quest Title:</label>
-                <input 
-                  type="text" 
-                  value={newQuest.title} 
-                  onChange={(e) => setNewQuest({...newQuest, title: e.target.value})}
-                  placeholder="e.g., Read 30 minutes"
+                <input
+                  type="text"
+                  value={newQuest.title}
+                  onChange={(e) =>
+                    setNewQuest({ ...newQuest, title: e.target.value })
+                  }
                   className="pixel-input"
                 />
               </div>
               <div className="modal__field">
                 <label>Description:</label>
-                <textarea 
-                  value={newQuest.description} 
-                  onChange={(e) => setNewQuest({...newQuest, description: e.target.value})}
-                  placeholder="What do you want to achieve?"
+                <textarea
+                  value={newQuest.description}
+                  onChange={(e) =>
+                    setNewQuest({ ...newQuest, description: e.target.value })
+                  }
                   className="pixel-input pixel-input--textarea"
                   rows={2}
                 />
@@ -313,11 +285,12 @@ export default function LobbyPage() {
               <div className="modal__field">
                 <label>Icon:</label>
                 <div className="modal__icon-grid">
-                  {availableIcons.map(icon => (
+                  {availableIcons.map((icon) => (
                     <button
                       key={icon}
+                      type="button"
                       className={`modal__icon-btn ${newQuest.icon === icon ? 'active' : ''}`}
-                      onClick={() => setNewQuest({...newQuest, icon})}
+                      onClick={() => setNewQuest({ ...newQuest, icon })}
                     >
                       {icon}
                     </button>
@@ -327,9 +300,14 @@ export default function LobbyPage() {
               <div className="modal__row">
                 <div className="modal__field">
                   <label>Type:</label>
-                  <select 
-                    value={newQuest.type} 
-                    onChange={(e) => setNewQuest({...newQuest, type: e.target.value as any})}
+                  <select
+                    value={newQuest.type}
+                    onChange={(e) =>
+                      setNewQuest({
+                        ...newQuest,
+                        type: e.target.value as typeof newQuest.type,
+                      })
+                    }
                     className="pixel-input"
                   >
                     <option value="daily">Daily</option>
@@ -339,44 +317,63 @@ export default function LobbyPage() {
                 </div>
                 <div className="modal__field">
                   <label>Tracking:</label>
-                  <select 
-                    value={newQuest.trackingType} 
-                    onChange={(e) => setNewQuest({...newQuest, trackingType: e.target.value as any})}
+                  <select
+                    value={newQuest.trackingType}
+                    onChange={(e) =>
+                      setNewQuest({
+                        ...newQuest,
+                        trackingType: e.target
+                          .value as typeof newQuest.trackingType,
+                      })
+                    }
                     className="pixel-input"
                   >
                     <option value="binary">Yes/No</option>
-                    <option value="numeric">Numeric (e.g., km, pages)</option>
-                    <option value="timer">Timer (minutes)</option>
+                    <option value="numeric">Numeric</option>
+                    <option value="timer">Timer</option>
                   </select>
                 </div>
               </div>
               <div className="modal__row">
                 <div className="modal__field">
                   <label>Target Value:</label>
-                  <input 
-                    type="number" 
-                    value={newQuest.targetValue} 
-                    onChange={(e) => setNewQuest({...newQuest, targetValue: parseFloat(e.target.value) || 0})}
+                  <input
+                    type="number"
+                    value={newQuest.targetValue}
+                    onChange={(e) =>
+                      setNewQuest({
+                        ...newQuest,
+                        targetValue: parseFloat(e.target.value) || 0,
+                      })
+                    }
                     className="pixel-input"
                   />
                 </div>
                 <div className="modal__field">
                   <label>Unit:</label>
-                  <input 
-                    type="text" 
-                    value={newQuest.unit} 
-                    onChange={(e) => setNewQuest({...newQuest, unit: e.target.value})}
-                    placeholder="km, pages, min, times"
+                  <input
+                    type="text"
+                    value={newQuest.unit}
+                    onChange={(e) =>
+                      setNewQuest({ ...newQuest, unit: e.target.value })
+                    }
                     className="pixel-input"
                   />
                 </div>
               </div>
             </div>
             <div className="modal__footer">
-              <button className="pixel-btn" onClick={handleCreateQuest} disabled={!newQuest.title}>
+              <button
+                className="pixel-btn"
+                onClick={handleCreateQuest}
+                disabled={!newQuest.title || submitting}
+              >
                 ⚒️ Forge Quest
               </button>
-              <button className="pixel-btn pixel-btn--secondary" onClick={() => setShowForgeModal(false)}>
+              <button
+                className="pixel-btn pixel-btn--secondary"
+                onClick={() => setShowForgeModal(false)}
+              >
                 Cancel
               </button>
             </div>
@@ -384,40 +381,59 @@ export default function LobbyPage() {
         </div>
       )}
 
-      {/* Log Progress Modal (unchanged) */}
       {selectedQuest && (
-        <div className="modal-overlay" onClick={() => setSelectedQuest(null)}>
+        <div
+          className="modal-overlay"
+          onClick={() => !submitting && setSelectedQuest(null)}
+        >
           <div className="modal pixel-card" onClick={(e) => e.stopPropagation()}>
             <div className="modal__header">
               <h3>Log Progress</h3>
-              <button className="modal__close" onClick={() => setSelectedQuest(null)}>✖</button>
+              <button
+                className="modal__close"
+                onClick={() => setSelectedQuest(null)}
+              >
+                ✖
+              </button>
             </div>
             <div className="modal__body">
-              <p><strong>{selectedQuest.title}</strong> – {selectedQuest.description}</p>
+              <p>
+                <strong>{selectedQuest.title}</strong> –{' '}
+                {selectedQuest.description}
+              </p>
               <div className="modal__field">
                 <label>Amount ({selectedQuest.unit}):</label>
-                <input 
-                  type="number" 
-                  value={logValue} 
+                <input
+                  type="number"
+                  value={logValue}
                   onChange={(e) => setLogValue(e.target.value)}
-                  placeholder={`Enter ${selectedQuest.unit}`}
                   className="pixel-input"
                 />
               </div>
               <div className="modal__field">
                 <label>Note (optional):</label>
-                <textarea 
-                  value={logNote} 
+                <textarea
+                  value={logNote}
                   onChange={(e) => setLogNote(e.target.value)}
-                  placeholder="How did it go?"
                   className="pixel-input pixel-input--textarea"
                   rows={3}
                 />
               </div>
             </div>
             <div className="modal__footer">
-              <button className="pixel-btn" onClick={submitProgress}>Submit</button>
-              <button className="pixel-btn pixel-btn--secondary" onClick={() => setSelectedQuest(null)}>Cancel</button>
+              <button
+                className="pixel-btn"
+                onClick={submitProgress}
+                disabled={submitting}
+              >
+                {submitting ? 'Saving...' : 'Submit'}
+              </button>
+              <button
+                className="pixel-btn pixel-btn--secondary"
+                onClick={() => setSelectedQuest(null)}
+              >
+                Cancel
+              </button>
             </div>
           </div>
         </div>
