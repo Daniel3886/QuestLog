@@ -54,7 +54,7 @@ export class QuestsService {
 
     const data: Prisma.QuestUncheckedUpdateInput = {
       title: dto.title,
-      description: dto.description,
+      description: dto.description
       trackingType: dto.trackingType,
       unit: dto.unit,
       targetValue: dto.targetValue,
