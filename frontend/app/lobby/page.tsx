@@ -2,7 +2,6 @@
 "use client";
 
 import React, { useState } from 'react';
-import Link from 'next/link';
 import './lobby.scss';
 
 // Types
@@ -217,7 +216,7 @@ export default function LobbyPage() {
         <div className="lobby__daily-summary">
           <div className="lobby__daily-icon">📋</div>
           <div className="lobby__daily-text">
-            <span className="lobby__daily-label">Today's Progress</span>
+            <span className="lobby__daily-label">Today&apos;s Progress</span>
             <span className="lobby__daily-value">{mockUser.completedToday}/{quests.filter(q => q.type === 'daily').length}</span>
           </div>
         </div>
@@ -329,7 +328,7 @@ export default function LobbyPage() {
                   <label>Type:</label>
                   <select 
                     value={newQuest.type} 
-                    onChange={(e) => setNewQuest({...newQuest, type: e.target.value as any})}
+                    onChange={(e) => setNewQuest({...newQuest, type: e.target.value as Quest['type']})}
                     className="pixel-input"
                   >
                     <option value="daily">Daily</option>
@@ -341,7 +340,7 @@ export default function LobbyPage() {
                   <label>Tracking:</label>
                   <select 
                     value={newQuest.trackingType} 
-                    onChange={(e) => setNewQuest({...newQuest, trackingType: e.target.value as any})}
+                    onChange={(e) => setNewQuest({...newQuest, trackingType: e.target.value as Quest['trackingType']})}
                     className="pixel-input"
                   >
                     <option value="binary">Yes/No</option>

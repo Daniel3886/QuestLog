@@ -214,8 +214,10 @@ const availableIcons = ['🐉', '⚔️', '🛡️', '🏹', '🔮', '💀', '�
 export default function GuildsPage() {
   const [guild, setGuild] = useState<Guild | null>(mockMyGuild);
   const [activeQuests, setActiveQuests] = useState<GuildQuest[]>(mockGuildQuests);
-  const [completedQuests, setCompletedQuests] = useState<GuildQuest[]>(mockCompletedQuests);
-  const [badges, setBadges] = useState<GuildBadge[]>(mockBadges);
+  // TODO: Implement this when completed guild quests can be updated from the API.
+  const [completedQuests] = useState<GuildQuest[]>(mockCompletedQuests);
+  // TODO: Implement this when guild badges can be earned or refreshed from the API.
+  const [badges] = useState<GuildBadge[]>(mockBadges);
   const [selectedQuest, setSelectedQuest] = useState<GuildQuest | null>(null);
   const [showCreateQuestModal, setShowCreateQuestModal] = useState(false);
   const [showCreateGuildModal, setShowCreateGuildModal] = useState(false);
@@ -240,7 +242,6 @@ export default function GuildsPage() {
     rewardGems: 50,
   });
 
-  const userIsLeader = true; // In real app, check if current user's role === 'leader'
   const currentUserId = 'u1';
 
   const getMemberRole = (userId: string): 'leader' | 'member' | null => {
@@ -336,7 +337,7 @@ export default function GuildsPage() {
   const handleVote = (questId: string, vote: 'yes' | 'no') => {
     setActiveQuests(prev => prev.map(q => {
       if (q.id === questId) {
-        return { ...q, votes: q.votes + 1 };
+        return { ...q, votes: vote === 'yes' ? q.votes + 1 : Math.max(q.votes - 1, 0) };
       }
       return q;
     }));
@@ -696,7 +697,7 @@ export default function GuildsPage() {
                   <label>Quest Type:</label>
                   <select 
                     value={newQuest.type} 
-                    onChange={(e) => setNewQuest({...newQuest, type: e.target.value as any})}
+                    onChange={(e) => setNewQuest({...newQuest, type: e.target.value as GuildQuest['type']})}
                     className="pixel-input"
                   >
                     <option value="summative">Summative (total combined)</option>
@@ -708,7 +709,7 @@ export default function GuildsPage() {
                   <label>Tracking Type:</label>
                   <select 
                     value={newQuest.trackingType} 
-                    onChange={(e) => setNewQuest({...newQuest, trackingType: e.target.value as any})}
+                    onChange={(e) => setNewQuest({...newQuest, trackingType: e.target.value as GuildQuest['trackingType']})}
                     className="pixel-input"
                   >
                     <option value="binary">Yes/No</option>

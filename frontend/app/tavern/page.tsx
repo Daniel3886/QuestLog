@@ -194,7 +194,8 @@ const mockComments: Comment[] = [
 const categories = ['all', 'fitness', 'education', 'creativity', 'wellness'];
 
 export default function TavernPage() {
-  const [events, setEvents] = useState<GlobalEvent[]>(mockEvents);
+  // TODO: Implement this when global events can be refreshed from the API.
+  const [events] = useState<GlobalEvent[]>(mockEvents);
   const [publicQuests, setPublicQuests] = useState<PublicQuest[]>(mockPublicQuests);
   const [comments, setComments] = useState<Comment[]>(mockComments);
   const [selectedEvent, setSelectedEvent] = useState<GlobalEvent | null>(null);
@@ -625,7 +626,7 @@ export default function TavernPage() {
                   <label>Category:</label>
                   <select 
                     value={newPublicQuest.category} 
-                    onChange={(e) => setNewPublicQuest({...newPublicQuest, category: e.target.value as any})}
+                    onChange={(e) => setNewPublicQuest({...newPublicQuest, category: e.target.value as PublicQuest['category']})}
                     className="pixel-input"
                   >
                     <option value="fitness">Fitness</option>
@@ -638,7 +639,7 @@ export default function TavernPage() {
                   <label>Difficulty:</label>
                   <select 
                     value={newPublicQuest.difficulty} 
-                    onChange={(e) => setNewPublicQuest({...newPublicQuest, difficulty: e.target.value as any})}
+                    onChange={(e) => setNewPublicQuest({...newPublicQuest, difficulty: e.target.value as PublicQuest['difficulty']})}
                     className="pixel-input"
                   >
                     <option value="easy">Easy</option>
@@ -652,7 +653,7 @@ export default function TavernPage() {
                   <label>Tracking Type:</label>
                   <select 
                     value={newPublicQuest.trackingType} 
-                    onChange={(e) => setNewPublicQuest({...newPublicQuest, trackingType: e.target.value as any})}
+                    onChange={(e) => setNewPublicQuest({...newPublicQuest, trackingType: e.target.value as PublicQuest['trackingType']})}
                     className="pixel-input"
                   >
                     <option value="binary">Yes/No</option>
