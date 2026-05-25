@@ -1,11 +1,14 @@
-// app/register/page.tsx
-"use client";
+'use client';
 
 import React, { useState } from 'react';
 import Link from 'next/link';
-import './register.scss'; // same as login.scss (copy or reuse)
+import { useRouter } from 'next/navigation';
+import { authApi, ApiError } from '@/lib/api';
+import { setTokens } from '@/lib/auth';
+import './register.scss';
 
 export default function RegisterPage() {
+  const router = useRouter();
   const [username, setUsername] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -27,11 +30,24 @@ export default function RegisterPage() {
     }
 
     setIsLoading(true);
-    // Simulate registration
-    setTimeout(() => {
-      // In real app, call your backend
-      window.location.href = '/login?registered=true';
-    }, 800);
+    try {
+      const tokens = await authApi.register({
+        email,
+        password,
+        confirmPassword,
+        username: username.trim() || undefined,
+      });
+      setTokens(tokens.accessToken, tokens.refreshToken);
+      router.push('/lobby');
+    } catch (err) {
+      setError(
+        err instanceof ApiError
+          ? err.message
+          : 'Registration failed. Try again.',
+      );
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -46,28 +62,58 @@ export default function RegisterPage() {
         <form className="register__form" onSubmit={handleSubmit}>
           <div className="register__field">
             <label>🏷️ Username</label>
-            <input type="text" value={username} onChange={(e) => setUsername(e.target.value)} className="pixel-input" required />
+            <input
+              type="text"
+              value={username}
+              onChange={(e) => setUsername(e.target.value)}
+              className="pixel-input"
+              placeholder="Optional"
+            />
           </div>
           <div className="register__field">
             <label>📧 Email</label>
-            <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} className="pixel-input" required />
+            <input
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              className="pixel-input"
+              required
+            />
           </div>
           <div className="register__field">
             <label>🔒 Password</label>
-            <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} className="pixel-input" required />
+            <input
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              className="pixel-input"
+              required
+            />
           </div>
           <div className="register__field">
             <label>🔒 Confirm Password</label>
-            <input type="password" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} className="pixel-input" required />
+            <input
+              type="password"
+              value={confirmPassword}
+              onChange={(e) => setConfirmPassword(e.target.value)}
+              className="pixel-input"
+              required
+            />
           </div>
           {error && <div className="register__error">{error}</div>}
-          <button type="submit" className="pixel-btn pixel-btn--large" disabled={isLoading}>
+          <button
+            type="submit"
+            className="pixel-btn pixel-btn--large"
+            disabled={isLoading}
+          >
             {isLoading ? 'CREATING...' : '⚔️ REGISTER'}
           </button>
         </form>
         <div className="register__footer">
           <span>Already have an account?</span>
-          <Link href="/login" className="register__login-link">Login →</Link>
+          <Link href="/login" className="register__login-link">
+            Login →
+          </Link>
         </div>
       </div>
     </div>

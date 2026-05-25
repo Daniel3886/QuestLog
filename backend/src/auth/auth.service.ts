@@ -30,6 +30,7 @@ export class AuthService {
     const user = await this.userService.createUser({
       email: dto.email,
       password: dto.password,
+      username: dto.username,
     });
 
     return {

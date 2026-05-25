@@ -1117,3 +1117,17 @@ body {
   from { background-position: 0 0; }
   to { background-position: 100px 100px; }
 }
+
+.pixel-error-banner {
+  margin: 1rem auto;
+  max-width: 960px;
+  padding: 0.75rem 1rem;
+  background: rgba(220, 38, 38, 0.15);
+  border: 1px solid #dc2626;
+  border-radius: var(--border-radius-sm);
+  color: #fecaca;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}

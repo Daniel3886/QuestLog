@@ -1,6 +1,7 @@
 import {
   IsEmail,
   IsNotEmpty,
+  IsOptional,
   IsString,
   MaxLength,
   MinLength,
@@ -23,4 +24,10 @@ export class RegisterDto {
   @MinLength(6)
   @MaxLength(100)
   confirmPassword!: string;
+
+  @IsString()
+  @IsOptional()
+  @MinLength(3)
+  @MaxLength(30)
+  username?: string;
 }
