@@ -81,7 +81,7 @@ export default function LeaderboardsPage() {
 
   // Sort user rankings based on selected metric
   const getSortedUsers = (): RankedUser[] => {
-    let sorted = [...baseUserRankings];
+    const sorted = [...baseUserRankings];
     switch (userMetric) {
       case 'streak':
         sorted.sort((a, b) => b.streak - a.streak);
@@ -101,7 +101,7 @@ export default function LeaderboardsPage() {
 
   // Sort guild rankings based on selected metric
   const getSortedGuilds = (): RankedGuild[] => {
-    let sorted = [...baseGuildRankings];
+    const sorted = [...baseGuildRankings];
     switch (guildMetric) {
       case 'level':
         sorted.sort((a, b) => b.level - a.level);
