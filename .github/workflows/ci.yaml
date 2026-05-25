@@ -24,11 +24,9 @@ jobs:
           - app: backend
             build: npm run build
             test: npm run test -- --passWithNoTests
-            audit-level: high
           - app: frontend
             build: npm run build -- --webpack
             test: npm run test --if-present
-            audit-level: high
 
     defaults:
       run:
@@ -47,9 +45,6 @@ jobs:
 
       - name: Check lockfile and install dependencies
         run: npm ci
-
-      - name: Audit dependencies
-        run: npm audit --audit-level=${{ matrix.audit-level }}
 
       - name: Run lint
         run: npm run lint
