@@ -7,6 +7,7 @@ import { useRequireAuth } from '@/hooks/useRequireAuth';
 import type { FriendSummary, LobbyQuest, UserProfile } from '@/lib/types';
 import ErrorBanner from '@/components/ErrorBanner';
 import './lobby.scss';
+import ThemeSwitcher from '@/components/ThemeSwitcher';
 
 const availableIcons = ['🏃', '📚', '🧘', '💪', '🗣️', '🎨', '🎸', '🍳', '💧', '🌟'];
 
@@ -189,6 +190,7 @@ export default function LobbyPage() {
 
   return (
     <div className="lobby">
+        <ThemeSwitcher />
       <div className="lobby__particles"></div>
       <ErrorBanner message={error} onDismiss={() => setError('')} />
 

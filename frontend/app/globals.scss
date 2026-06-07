@@ -744,7 +744,7 @@ body {
 .pixel-topbar__inner {
   max-width: 1400px;
   margin: 0 auto;
-  padding: 0 1.5rem;
+  padding: 0 0 0 1.5rem;
   height: 100%;
   display: flex;
   align-items: center;
@@ -1165,4 +1165,87 @@ body {
     opacity: 1;
     transform: translateX(-50%) translateY(0);
   }
+}
+
+.pixel-user-menu {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  background: rgba(0, 0, 0, 0.3);
+  padding: 0.25rem 0.5rem 0.25rem 0.75rem;
+  border: 2px solid var(--pixel-border);
+  border-radius: 2rem;
+  transition: all 0.05s linear;
+
+  &:hover {
+    border-color: var(--pixel-primary);
+  }
+}
+
+.pixel-user-info {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.pixel-user-avatar {
+  font-size: 1.4rem;
+  filter: drop-shadow(1px 1px 0 rgba(0,0,0,0.3));
+}
+
+.pixel-username {
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: var(--pixel-text);
+  letter-spacing: 0.5px;
+}
+
+.pixel-logout-btn {
+  background: none;
+  border: none;
+  font-size: 1.2rem;
+  cursor: pointer;
+  padding: 0.2rem 0.4rem;
+  border-radius: 2rem;
+  transition: all 0.05s linear;
+  color: var(--pixel-text-dim);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  &:hover {
+    background: rgba(255, 95, 109, 0.2);
+    color: var(--pixel-primary);
+    transform: scale(1.05);
+  }
+}
+
+/* ========================================
+   ALTERNATIVE THEMES
+   ======================================== */
+
+[data-theme="pixel-light"] {
+  --pixel-bg: #f5f0e8;
+  --pixel-bg-light: #e8dfd0;
+  --pixel-card: #fff8f0;
+  --pixel-border: #8b5a2b;
+  --pixel-primary: #c44b3c;
+  --pixel-secondary: #2a7f6e;
+  --pixel-text: #2d2a24;
+  --pixel-text-dim: #5a5550;
+  --pixel-success: #4c8c4a;
+  --pixel-gold: #c9a03d;
+}
+
+[data-theme="retro-neon"] {
+  --pixel-bg: #0a0f1e;
+  --pixel-bg-light: #121a2a;
+  --pixel-card: #1a1f3a;
+  --pixel-border: #00ffcc;
+  --pixel-primary: #ff00aa;
+  --pixel-secondary: #00ffcc;
+  --pixel-text: #e0fffa;
+  --pixel-text-dim: #88bbbb;
+  --pixel-success: #aaffcc;
+  --pixel-gold: #ffcc22;
 }
