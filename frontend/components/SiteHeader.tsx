@@ -8,6 +8,7 @@ import { usersApi } from '@/lib/api';
 export default function SiteHeader() {
   const [loggedIn, setLoggedIn] = useState(false);
   const [username, setUsername] = useState<string | null>(null);
+  const [userAvatar, setUserAvatar] = useState('🧙');
 
   useEffect(() => {
     const authed = isLoggedIn();
@@ -37,16 +38,20 @@ export default function SiteHeader() {
 
         <div className="pixel-actions">
           {loggedIn ? (
-            <>
-              <span className="pixel-avatar-name">{username ?? '…'}</span>
+            <div className="pixel-user-menu">
+              <div className="pixel-user-info">
+                <span className="pixel-user-avatar">{userAvatar}</span>
+                <span className="pixel-username">{username ?? '…'}</span>
+              </div>
               <button
                 type="button"
-                className="pixel-btn pixel-btn--small"
+                className="pixel-logout-btn"
                 onClick={() => logout()}
+                aria-label="Logout"
               >
-                LOGOUT
+                🚪
               </button>
-            </>
+            </div>
           ) : (
             <Link href="/login" className="pixel-btn pixel-btn--small">
               🔑 LOGIN

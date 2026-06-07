@@ -231,54 +231,6 @@ export default function LobbyPage() {
         </div>
       )}
 
-      <div className="lobby__friends-panel pixel-card">
-        <div className="lobby__friends-header">
-          <h3>Friends</h3>
-          <small>Keep your party close and invite new allies.</small>
-        </div>
-        <div className="lobby__friends-list">
-          {friends.length === 0 ? (
-            <p>No friends yet. Send a request to start adventuring together.</p>
-          ) : (
-            friends.map((friend) => (
-              <div key={friend.id} className="friend-item">
-                <span>{friend.avatar}</span>
-                <span>{friend.username}</span>
-              </div>
-            ))
-          )}
-        </div>
-        <div className="lobby__friends-request">
-          <input
-            type="email"
-            placeholder="Friend email"
-            value={friendEmail}
-            onChange={(e) => setFriendEmail(e.target.value)}
-            className="pixel-input"
-          />
-          <button
-            className="pixel-btn"
-            onClick={async () => {
-              if (!friendEmail.trim()) return;
-              setSubmitting(true);
-              setError('');
-              try {
-                await friendsApi.request(friendEmail.trim());
-                setFriendEmail('');
-                await loadData();
-              } catch (err) {
-                setError(err instanceof ApiError ? err.message : 'Failed to send request');
-              } finally {
-                setSubmitting(false);
-              }
-            }}
-            disabled={!friendEmail.trim() || submitting}
-          >
-            Send Request
-          </button>
-        </div>
-      </div>
-
       <div className="lobby__quests-header">
         <h2 className="pixel-heading">📜 ACTIVE QUESTS 📜</h2>
       </div>
@@ -367,6 +319,54 @@ export default function LobbyPage() {
         <button className="pixel-btn" onClick={() => setShowForgeModal(true)}>
           Forge New Quest
         </button>
+      </div>
+
+      <div className="lobby__friends-panel pixel-card">
+        <div className="lobby__friends-header">
+          <h3>Friends</h3>
+          <small>Keep your party close and invite new allies.</small>
+        </div>
+        <div className="lobby__friends-list">
+          {friends.length === 0 ? (
+            <p>No friends yet. Send a request to start adventuring together.</p>
+          ) : (
+            friends.map((friend) => (
+              <div key={friend.id} className="friend-item">
+                <span>{friend.avatar}</span>
+                <span>{friend.username}</span>
+              </div>
+            ))
+          )}
+        </div>
+        <div className="lobby__friends-request">
+          <input
+            type="email"
+            placeholder="Friend email"
+            value={friendEmail}
+            onChange={(e) => setFriendEmail(e.target.value)}
+            className="pixel-input"
+          />
+          <button
+            className="pixel-btn"
+            onClick={async () => {
+              if (!friendEmail.trim()) return;
+              setSubmitting(true);
+              setError('');
+              try {
+                await friendsApi.request(friendEmail.trim());
+                setFriendEmail('');
+                await loadData();
+              } catch (err) {
+                setError(err instanceof ApiError ? err.message : 'Failed to send request');
+              } finally {
+                setSubmitting(false);
+              }
+            }}
+            disabled={!friendEmail.trim() || submitting}
+          >
+            Send Request
+          </button>
+        </div>
       </div>
 
       {showForgeModal && (

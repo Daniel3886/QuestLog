@@ -83,10 +83,6 @@ export default function TavernPage() {
       setPublicQuests(questList);
       setComments(commentList);
 
-      if (isLoggedIn()) {
-        const profile = await usersApi.me();
-        setUserAvatar(profile.avatar);
-      }
     } catch (err) {
       setError(err instanceof ApiError ? err.message : 'Failed to load tavern');
     } finally {
