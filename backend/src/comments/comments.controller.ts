@@ -15,25 +15,25 @@ import { User } from 'src/auth/decorators/user.decorator';
 import type { AuthUser } from 'src/auth/types/auth-user.type';
 import { CreateCommentDto } from './dto/create-comment.dto';
 import { CommentsService } from './comments.service';
-import { mockComments } from '../mock-data';
+//import { mockComments } from '../mock-data';
 
 @Controller('comments')
 export class CommentsController {
   constructor(private readonly commentsService: CommentsService) {}
 
-  // @Get()
-  // listComments(
-  //   @Query('targetType') targetType: $Enums.CommentTargetType,
-  //   @Query('targetId') targetId: string,
-  // ) {
-  //   return this.commentsService.listComments(targetType, targetId);
-  // }
-
   @Get()
-  async listComments(@Query('targetType') targetType: string, @Query('targetId') targetId: string) {
-    // Return mock comments for any target
-    return mockComments;
+  listComments(
+    @Query('targetType') targetType: $Enums.CommentTargetType,
+    @Query('targetId') targetId: string,
+  ) {
+    return this.commentsService.listComments(targetType, targetId);
   }
+
+  // @Get()
+  // async listComments(@Query('targetType') targetType: string, @Query('targetId') targetId: string) {
+  //   // Return mock comments for any target
+  //   return mockComments;
+  // }
 
   @UseGuards(JwtAuthGuard)
   @Post()
@@ -44,7 +44,7 @@ export class CommentsController {
   @UseGuards(JwtAuthGuard)
   @Delete(':id')
   deleteComment(@User() user: AuthUser, @Param('id') id: string) {
-    return this.commentsService.deleteComment(user.id, id);
+    return this.commentsService.deleteComment(user.id, id, user.isAdmin ?? false);
   }
 
   @UseGuards(JwtAuthGuard)

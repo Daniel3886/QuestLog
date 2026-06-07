@@ -182,10 +182,19 @@ export class QuestsService {
     TIMER: 'TIMER',
   };
 
+  const proofMap: Record<string, $Enums.QuestProofRequired> = {
+    NONE: 'NONE',
+    TEXT: 'TEXT',
+    IMAGE: 'IMAGE',
+  };
+
   // Safe mapping with defaults
   const category = dto.category ? categoryMap[dto.category] : 'OTHER';
   const difficulty = dto.difficulty ? difficultyMap[dto.difficulty] : 'MEDIUM';
   const trackingType = dto.trackingType ? trackingMap[dto.trackingType] : 'BINARY';
+  const proofRequired = dto.proofRequired
+    ? proofMap[dto.proofRequired]
+    : 'NONE';
 
   const quest = await this.database.quest.create({
     data: {
@@ -197,6 +206,7 @@ export class QuestsService {
       category,
       difficulty,
       trackingType,
+      proofRequired,
       unit: dto.unit,
       targetValue: dto.targetValue,
     },

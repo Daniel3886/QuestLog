@@ -12,6 +12,7 @@ export function formatQuestForLobby(
     todayProgress: number;
     todayComplete: boolean;
     currentStreak: number;
+    notes: string[];
   },
 ) {
   return {
@@ -27,6 +28,7 @@ export function formatQuestForLobby(
     icon: quest.icon,
     todayComplete: stats.todayComplete,
     proofRequired: quest.proofRequired.toLowerCase(),
+    notes: stats.notes,
   };
 }
 
@@ -45,6 +47,7 @@ export function formatPublicQuest(
     category: quest.category?.toLowerCase() ?? 'other',
     difficulty: quest.difficulty?.toLowerCase() ?? 'medium',
     trackingType: quest.trackingType.toLowerCase(),
+    proofRequired: quest.proofRequired.toLowerCase(),
     targetValue: quest.targetValue,
     unit: quest.unit ?? 'times',
     participants: quest._count.personalQuests,

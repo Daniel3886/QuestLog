@@ -7,15 +7,18 @@ import { UsersModule } from 'src/users/users.module';
 import { JwtStrategy } from './strategy/jwt-strategy.util';
 import { Config } from 'config';
 import { AuthTokenService } from './service/auth-token.service';
+import { AdminService } from './admin.service';
+import { DatabaseModule } from 'src/database/database.module';
 
 @Module({
   imports: [
     UsersModule,
+    DatabaseModule,
     PassportModule,
-    JwtModule.register({ secret: Config.jwtSecret }),
+    JwtModule.register({ secret: Config.jwtSecret, }),
   ],
   controllers: [AuthController],
-  providers: [AuthService, JwtStrategy, AuthTokenService],
-  exports: [AuthService],
+  providers: [AuthService, JwtStrategy, AuthTokenService, AdminService],
+  exports: [AuthService, AdminService],
 })
 export class AuthModule {}

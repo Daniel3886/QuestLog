@@ -18,7 +18,7 @@ import { CreateQuestDto } from './dto/create-quest.dto';
 import { UpdateQuestDto } from './dto/update-quest.dto';
 import { UpdateQuestProgressDto } from './dto/update-quest-progress.dto';
 import { QuestsService } from './quests.service';
-import { mockPublicQuests } from '../mock-data';
+//import { mockPublicQuests } from '../mock-data';
 
 
 @Controller('quests')

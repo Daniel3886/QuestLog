@@ -37,6 +37,10 @@ export class CreatePublicQuestDto {
   @IsNotEmpty()
   trackingType?: string;
 
+  @IsEnum($Enums.QuestProofRequired)
+  @IsOptional()
+  proofRequired?: $Enums.QuestProofRequired;
+
   @IsString()
   @IsOptional()
   @MaxLength(40)

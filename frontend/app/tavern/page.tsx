@@ -6,6 +6,7 @@ import {
   commentsApi,
   eventsApi,
   questsApi,
+  reportsApi,
   usersApi,
 } from '@/lib/api';
 import {
@@ -36,9 +37,12 @@ export default function TavernPage() {
 
   const [selectedEvent, setSelectedEvent] = useState<GlobalEvent | null>(null);
   const [eventContribute, setEventContribute] = useState('1');
+  const [eventComments, setEventComments] = useState<TavernComment[]>([]);
+  const [eventCommentText, setEventCommentText] = useState('');
 
   const [selectedQuest, setSelectedQuest] = useState<PublicQuest | null>(null);
   const [publicProgress, setPublicProgress] = useState('');
+  const [publicNote, setPublicNote] = useState('');
 
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [newComment, setNewComment] = useState('');
@@ -52,7 +56,8 @@ export default function TavernPage() {
   description: '',
   category: 'fitness' as 'fitness' | 'education' | 'creativity' | 'wellness' | 'other',
   difficulty: 'medium' as 'easy' | 'medium' | 'hard',
-  trackingType: 'binary' as 'binary' | 'numeric' | 'timer',
+  trackingType: 'binary' as 'binary' | 'numeric',
+  proofRequired: 'none' as 'none' | 'text',
   targetValue: 1,
   unit: 'times',
   icon: '⚔️',
@@ -93,6 +98,22 @@ export default function TavernPage() {
     loadTavern();
   }, [loadTavern]);
 
+  useEffect(() => {
+    if (!selectedEvent) {
+      setEventComments([]);
+      return;
+    }
+
+    (async () => {
+      try {
+        const comments = await commentsApi.list('EVENT', selectedEvent.id);
+        setEventComments(comments);
+      } catch (err) {
+        // ignore errors here; event detail still loads
+      }
+    })();
+  }, [selectedEvent]);
+
   const requireAuth = () => {
     if (!isLoggedIn()) {
       router.push('/login');
@@ -129,15 +150,20 @@ export default function TavernPage() {
     setError('');
     try {
       await questsApi.joinPublic(selectedQuest.id);
-      const value = parseFloat(publicProgress);
+      let value = parseFloat(publicProgress);
+      if (selectedQuest.trackingType === 'binary') {
+        value = selectedQuest.targetValue;
+      }
       if (!Number.isNaN(value) && value > 0) {
         await questsApi.updatePublicProgress(
           selectedQuest.id,
           Math.min(value, selectedQuest.targetValue),
+          publicNote || undefined,
         );
       }
       setSelectedQuest(null);
       setPublicProgress('');
+      setPublicNote('');
       await loadTavern();
     } catch (err) {
       setError(err instanceof ApiError ? err.message : 'Failed to join quest');
@@ -164,6 +190,35 @@ export default function TavernPage() {
     }
   };
 
+  const handleReportComment = async (commentId: string) => {
+    if (!requireAuth()) return;
+    setSubmitting(true);
+    setError('');
+    try {
+      await commentsApi.report(commentId, 'Reported from Tavern');
+      setComments((prev) => prev.filter((comment) => comment.id !== commentId));
+      setEventComments((prev) => prev.filter((comment) => comment.id !== commentId));
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : 'Failed to report comment');
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const handleReportQuest = async (questId: string) => {
+    if (!requireAuth()) return;
+    setSubmitting(true);
+    setError('');
+    try {
+      await reportsApi.create('QUEST', questId, 'Reported public quest');
+      setError('Quest reported. Administrators will review it.');
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : 'Failed to report quest');
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
   const handleCreatePublicQuest = async () => {
     if (!newPublicQuest.title.trim() || !requireAuth()) return;
     setSubmitting(true);
@@ -175,6 +230,7 @@ export default function TavernPage() {
         category: categoryMap[newPublicQuest.category],
         difficulty: difficultyMap[newPublicQuest.difficulty],
         trackingType: trackingMap[newPublicQuest.trackingType],
+        proofRequired: newPublicQuest.proofRequired.toUpperCase(),
         targetValue: newPublicQuest.targetValue,
         unit: newPublicQuest.unit,
       });
@@ -185,6 +241,7 @@ export default function TavernPage() {
         category: 'fitness',
         difficulty: 'medium',
         trackingType: 'binary',
+        proofRequired: 'none',
         targetValue: 1,
         unit: 'times',
         icon: '⚔️',
@@ -413,15 +470,28 @@ export default function TavernPage() {
                     🎯 {quest.targetValue} {quest.unit}
                   </span>
                 </div>
-                <button
-                  className="pixel-btn pixel-btn--small"
-                  onClick={() => {
-                    setSelectedQuest(quest);
-                    setPublicProgress('');
-                  }}
-                >
-                  Join Quest
-                </button>
+                <div className="quest-card__meta">
+                  <span className="quest-card__tag">
+                    {quest.proofRequired === 'text' ? 'Proof required' : 'No proof'}
+                  </span>
+                </div>
+                <div className="quest-card__actions">
+                  <button
+                    className="pixel-btn pixel-btn--small"
+                    onClick={() => {
+                      setSelectedQuest(quest);
+                      setPublicProgress('');
+                    }}
+                  >
+                    Join Quest
+                  </button>
+                  <button
+                    className="pixel-btn pixel-btn--secondary pixel-btn--small"
+                    onClick={() => handleReportQuest(quest.id)}
+                  >
+                    Report
+                  </button>
+                </div>
               </div>
             </div>
           ))}
@@ -462,6 +532,12 @@ export default function TavernPage() {
                     </span>
                   </div>
                   <p className="comment-card__text">{comment.content}</p>
+                  <button
+                    className="pixel-btn pixel-btn--secondary pixel-btn--tiny"
+                    onClick={() => handleReportComment(comment.id)}
+                  >
+                    Report
+                  </button>
                 </div>
               </div>
             ))}
@@ -502,6 +578,64 @@ export default function TavernPage() {
                   min={0}
                 />
               </div>
+              <div className="modal__field">
+                <label>Event Comments:</label>
+                <div className="modal__comment-box">
+                  {eventComments.length === 0 ? (
+                    <p>No comments yet. Start the conversation!</p>
+                  ) : (
+                    eventComments.map((comment) => (
+                      <div key={comment.id} className="comment-card comment-card--small pixel-card">
+                        <div className="comment-card__header">
+                          <span className="comment-card__name">{comment.userName}</span>
+                          <span className="comment-card__date">
+                            {new Date(comment.createdAt).toLocaleDateString()}
+                          </span>
+                        </div>
+                        <p className="comment-card__text">{comment.content}</p>
+                        <button
+                          className="pixel-btn pixel-btn--secondary pixel-btn--tiny"
+                          onClick={() => handleReportComment(comment.id)}
+                        >
+                          Report
+                        </button>
+                      </div>
+                    ))
+                  )}
+                </div>
+              </div>
+              <div className="modal__field">
+                <label>Add a comment:</label>
+                <textarea
+                  value={eventCommentText}
+                  onChange={(e) => setEventCommentText(e.target.value)}
+                  className="pixel-input pixel-input--textarea"
+                  rows={2}
+                />
+                <button
+                  className="pixel-btn pixel-btn--small"
+                  onClick={async () => {
+                    if (!eventCommentText.trim() || !requireAuth()) return;
+                    setSubmitting(true);
+                    try {
+                      const created = await commentsApi.create(
+                        'EVENT',
+                        selectedEvent.id,
+                        eventCommentText.trim(),
+                      );
+                      setEventComments((prev) => [created, ...prev]);
+                      setEventCommentText('');
+                    } catch (err) {
+                      setError(err instanceof ApiError ? err.message : 'Failed to post comment');
+                    } finally {
+                      setSubmitting(false);
+                    }
+                  }}
+                  disabled={submitting}
+                >
+                  Post Comment
+                </button>
+              </div>
             </div>
             <div className="modal__footer">
               <button
@@ -540,14 +674,34 @@ export default function TavernPage() {
             <div className="modal__body">
               <p>Created by {selectedQuest.author}.</p>
               <p>Complete the quest for +1 XP and +1 coin (not your own quests).</p>
+              {selectedQuest.trackingType === 'numeric' ? (
+                <div className="modal__field">
+                  <label>Current progress ({selectedQuest.unit}):</label>
+                  <input
+                    type="number"
+                    value={publicProgress}
+                    onChange={(e) => setPublicProgress(e.target.value)}
+                    className="pixel-input"
+                    placeholder={`0 – ${selectedQuest.targetValue}`}
+                  />
+                </div>
+              ) : (
+                <div className="modal__field">
+                  <label>Mark as completed:</label>
+                  <div className="modal__toggle-row">
+                    <span>Ticking this will complete the quest.</span>
+                  </div>
+                </div>
+              )}
               <div className="modal__field">
-                <label>Current progress ({selectedQuest.unit}):</label>
-                <input
-                  type="number"
-                  value={publicProgress}
-                  onChange={(e) => setPublicProgress(e.target.value)}
-                  className="pixel-input"
-                  placeholder={`0 – ${selectedQuest.targetValue}`}
+                <label>
+                  Proof {selectedQuest.proofRequired === 'text' ? '(required)' : '(optional)'}:
+                </label>
+                <textarea
+                  value={publicNote}
+                  onChange={(e) => setPublicNote(e.target.value)}
+                  className="pixel-input pixel-input--textarea"
+                  rows={3}
                 />
               </div>
             </div>
@@ -555,7 +709,10 @@ export default function TavernPage() {
               <button
                 className="pixel-btn"
                 onClick={confirmJoinQuest}
-                disabled={submitting}
+                disabled={
+                  submitting ||
+                  (selectedQuest.proofRequired === 'text' && !publicNote.trim())
+                }
               >
                 {submitting ? 'Joining...' : 'Join Quest'}
               </button>
@@ -685,7 +842,23 @@ export default function TavernPage() {
                   >
                     <option value="binary">Yes/No</option>
                     <option value="numeric">Numeric</option>
-                    <option value="timer">Timer</option>
+                  </select>
+                </div>
+                <div className="modal__field">
+                  <label>Proof Required:</label>
+                  <select
+                    value={newPublicQuest.proofRequired}
+                    onChange={(e) =>
+                      setNewPublicQuest({
+                        ...newPublicQuest,
+                        proofRequired: e.target
+                          .value as typeof newPublicQuest.proofRequired,
+                      })
+                    }
+                    className="pixel-input"
+                  >
+                    <option value="none">None</option>
+                    <option value="text">Text proof</option>
                   </select>
                 </div>
                 <div className="modal__field">

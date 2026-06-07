@@ -1,23 +1,25 @@
-import { Body, Controller, Get, Param, Post, UseGuards } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, Post, Put, UseGuards } from '@nestjs/common';
 import { JwtAuthGuard } from 'src/auth/guards/jwt-auth.guard';
+import { AdminGuard } from 'src/auth/guards/admin.guard';
 import { User } from 'src/auth/decorators/user.decorator';
 import type { AuthUser } from 'src/auth/types/auth-user.type';
 import { ContributeEventDto } from './dto/contribute-event.dto';
+import { CreateEventDto } from './dto/create-event.dto';
+import { UpdateEventDto } from './dto/update-event.dto';
 import { EventsService } from './events.service';
-import { mockEvents } from '../mock-data';
 
 @Controller('events')
 export class EventsController {
   constructor(private readonly eventsService: EventsService) {}
 
-  // @Get()
-  // listEvents() {
-  //   return this.eventsService.listEvents();
-  // }
   @Get()
-  async listEvents() {
-    return mockEvents;
+  listEvents() {
+    return this.eventsService.listEvents();
   }
+  // @Get()
+  // async listEvents() {
+  //   return mockEvents;
+  // }
 
   @Get(':id')
   getEvent(@Param('id') id: string) {
@@ -38,5 +40,23 @@ export class EventsController {
     @Body() dto: ContributeEventDto,
   ) {
     return this.eventsService.contribute(user.id, id, dto);
+  }
+
+  @UseGuards(JwtAuthGuard, AdminGuard)
+  @Post()
+  createEvent(@Body() dto: CreateEventDto) {
+    return this.eventsService.createEvent(dto);
+  }
+
+  @UseGuards(JwtAuthGuard, AdminGuard)
+  @Put(':id')
+  updateEvent(@Param('id') id: string, @Body() dto: UpdateEventDto) {
+    return this.eventsService.updateEvent(id, dto);
+  }
+
+  @UseGuards(JwtAuthGuard, AdminGuard)
+  @Delete(':id')
+  deleteEvent(@Param('id') id: string) {
+    return this.eventsService.deleteEvent(id);
   }
 }

@@ -1,6 +1,6 @@
-import { IsUUID } from 'class-validator';
+import { IsEmail } from 'class-validator';
 
 export class SendFriendRequestDto {
-  @IsUUID()
-  friendId!: string;
+  @IsEmail()
+  friendEmail!: string;
 }

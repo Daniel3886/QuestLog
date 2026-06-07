@@ -31,7 +31,7 @@ export class FriendsController {
 
   @Post('request')
   sendRequest(@User() user: AuthUser, @Body() dto: SendFriendRequestDto) {
-    return this.friendsService.sendRequest(user.id, dto.friendId);
+    return this.friendsService.sendRequest(user.id, dto.friendEmail);
   }
 
   @Patch(':id/accept')

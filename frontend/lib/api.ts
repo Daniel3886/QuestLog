@@ -1,6 +1,7 @@
 import { getAccessToken } from './auth';
 import type {
   AuthTokens,
+  FriendSummary,
   GlobalEvent,
   Guild,
   GuildQuest,
@@ -131,6 +132,11 @@ export const questsApi = {
       method: 'PATCH',
       body: JSON.stringify({ currentValue, note }),
     }),
+  updatePersonal: (id: string, body: Record<string, unknown>) =>
+    apiFetch(`/quests/${id}`, {
+      method: 'PATCH',
+      body: JSON.stringify(body),
+    }),
 };
 
 // Events
@@ -165,6 +171,37 @@ export const commentsApi = {
       method: 'POST',
       body: JSON.stringify({ targetType, targetId, content }),
     }),
+  report: (commentId: string, content?: string) =>
+    apiFetch(`/comments/${commentId}/report`, {
+      method: 'PATCH',
+      body: JSON.stringify({ content }),
+    }),
+};
+
+export const friendsApi = {
+  list: () => apiFetch<FriendSummary[]>('/friends'),
+  request: (email: string) =>
+    apiFetch('/friends/request', {
+      method: 'POST',
+      body: JSON.stringify({ friendEmail: email }),
+    }),
+  accept: (userId: string) =>
+    apiFetch(`/friends/${userId}/accept`, { method: 'POST' }),
+  remove: (userId: string) =>
+    apiFetch(`/friends/${userId}`, { method: 'DELETE' }),
+};
+
+export const reportsApi = {
+  create: (
+    reportedType: string,
+    reportedId: string,
+    content?: string,
+  ) =>
+    apiFetch('/reports', {
+      method: 'POST',
+      body: JSON.stringify({ reportedType, reportedId, content }),
+    }),
+  list: () => apiFetch('/reports'),
 };
 
 // Guilds

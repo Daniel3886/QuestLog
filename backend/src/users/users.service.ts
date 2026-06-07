@@ -112,6 +112,14 @@ export class UserService {
     return this.getProfile(user.id);
   }
 
+  async setUserBan(userId: string, banned: boolean) {
+    await this.database.user.update({
+      where: { id: userId },
+      data: { isBanned: banned },
+    });
+    return { userId, isBanned: banned };
+  }
+
   async comparePassword(
     inputPassword: string,
     hashedPassword: User['password'],

@@ -34,6 +34,8 @@ export interface LobbyQuest {
   streak: number;
   icon: string;
   todayComplete?: boolean;
+  proofRequired: 'none' | 'text' | 'image';
+  notes: string[];
 }
 
 export interface GlobalEvent {
@@ -61,6 +63,7 @@ export interface PublicQuest {
   category: string;
   difficulty: string;
   trackingType: string;
+  proofRequired: 'none' | 'text';
   targetValue: number;
   unit: string;
   participants: number;
@@ -157,4 +160,13 @@ export interface RankedGuild {
   members: number;
   totalQuests: number;
   totalXp: number;
+}
+
+export interface FriendSummary {
+  id: string;
+  userId: string;
+  username: string;
+  avatar: string;
+  streak: number;
+  since: string;
 }

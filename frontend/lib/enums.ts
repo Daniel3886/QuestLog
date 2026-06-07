@@ -8,11 +8,20 @@ export const frequencyMap = {
   custom: 'CUSTOM',
 } as const;
 
-export const trackingMap = {
+export const trackingMap: Record<
+  'binary' | 'numeric' | 'timer',
+  'BINARY' | 'NUMERIC' | 'TIMER'
+> = {
   binary: 'BINARY',
   numeric: 'NUMERIC',
   timer: 'TIMER',
-} as const;
+};
+
+export const proofRequiredMap: Record<'none' | 'text' | 'image', 'NONE' | 'TEXT' | 'IMAGE'> = {
+  none: 'NONE',
+  text: 'TEXT',
+  image: 'IMAGE',
+};
 
 export const categoryMap = {
   fitness: 'FITNESS',

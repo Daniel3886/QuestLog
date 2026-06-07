@@ -1,10 +1,10 @@
 'use client';
 
 import React, { useCallback, useEffect, useState } from 'react';
-import { ApiError, questsApi, usersApi } from '@/lib/api';
-import { frequencyMap, trackingMap } from '@/lib/enums';
+import { ApiError, friendsApi, questsApi, usersApi } from '@/lib/api';
+import { frequencyMap, proofRequiredMap, trackingMap } from '@/lib/enums';
 import { useRequireAuth } from '@/hooks/useRequireAuth';
-import type { LobbyQuest, UserProfile } from '@/lib/types';
+import type { FriendSummary, LobbyQuest, UserProfile } from '@/lib/types';
 import ErrorBanner from '@/components/ErrorBanner';
 import './lobby.scss';
 
@@ -17,16 +17,21 @@ export default function LobbyPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [selectedQuest, setSelectedQuest] = useState<LobbyQuest | null>(null);
+  const [editQuest, setEditQuest] = useState<LobbyQuest | null>(null);
   const [showForgeModal, setShowForgeModal] = useState(false);
   const [logValue, setLogValue] = useState('');
   const [logNote, setLogNote] = useState('');
+  const [logProofImage, setLogProofImage] = useState<File | null>(null);
+  const [friendEmail, setFriendEmail] = useState('');
+  const [friends, setFriends] = useState<FriendSummary[]>([]);
   const [submitting, setSubmitting] = useState(false);
 
   const [newQuest, setNewQuest] = useState({
     title: '',
     description: '',
     type: 'daily' as 'daily' | 'weekly' | 'custom',
-    trackingType: 'binary' as 'binary' | 'numeric' | 'timer',
+    trackingType: 'binary' as 'binary' | 'numeric',
+    proofRequired: 'none' as 'none' | 'text' | 'image',
     targetValue: 1,
     unit: 'times',
     icon: '⚔️',
@@ -35,12 +40,14 @@ export default function LobbyPage() {
   const loadData = useCallback(async () => {
     setError('');
     try {
-      const [profile, questList] = await Promise.all([
+      const [profile, questList, friendList] = await Promise.all([
         usersApi.me(),
         questsApi.listPersonal(),
-      ]);
+        friendsApi.list(),
+      ] as const);
       setUser(profile);
       setQuests(questList);
+      setFriends(friendList);
     } catch (err) {
       setError(err instanceof ApiError ? err.message : 'Failed to load lobby');
     } finally {
@@ -58,24 +65,41 @@ export default function LobbyPage() {
     setSelectedQuest(quest);
     setLogValue('');
     setLogNote('');
+    setLogProofImage(null);
   };
 
   const submitProgress = async () => {
     if (!selectedQuest) return;
-    const increment = parseFloat(logValue);
-    if (Number.isNaN(increment)) return;
 
-    const newCurrent = Math.min(
-      selectedQuest.currentValue + increment,
-      selectedQuest.targetValue,
-    );
+    let newCurrent = selectedQuest.currentValue;
+    if (selectedQuest.trackingType === 'binary') {
+      newCurrent = selectedQuest.targetValue;
+    } else {
+      const increment = parseFloat(logValue);
+      if (Number.isNaN(increment)) return;
+      newCurrent = Math.min(
+        selectedQuest.currentValue + increment,
+        selectedQuest.targetValue,
+      );
+    }
 
     setSubmitting(true);
     setError('');
     try {
+      let proofUrl: string | undefined;
+      if (selectedQuest.proofRequired === 'image' && logProofImage) {
+        const reader = new FileReader();
+        proofUrl = await new Promise<string>((resolve, reject) => {
+          reader.onload = () => resolve(reader.result as string);
+          reader.onerror = () => reject(new Error('Failed to read image'));
+          reader.readAsDataURL(logProofImage);
+        });
+      }
+
       await questsApi.updateProgress(selectedQuest.id, {
         currentValue: newCurrent,
         note: logNote || undefined,
+        proofUrl: proofUrl || undefined,
       });
       setSelectedQuest(null);
       await loadData();
@@ -96,6 +120,7 @@ export default function LobbyPage() {
         description: newQuest.description || undefined,
         icon: newQuest.icon,
         trackingType: trackingMap[newQuest.trackingType],
+        proofRequired: proofRequiredMap[newQuest.proofRequired],
         targetValue: newQuest.targetValue,
         unit: newQuest.unit,
         frequency: frequencyMap[newQuest.type],
@@ -106,6 +131,7 @@ export default function LobbyPage() {
         description: '',
         type: 'daily',
         trackingType: 'binary',
+        proofRequired: 'none',
         targetValue: 1,
         unit: 'times',
         icon: '⚔️',
@@ -113,6 +139,30 @@ export default function LobbyPage() {
       await loadData();
     } catch (err) {
       setError(err instanceof ApiError ? err.message : 'Failed to create quest');
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const handleUpdateQuest = async () => {
+    if (!editQuest || !editQuest.title.trim()) return;
+    setSubmitting(true);
+    setError('');
+
+    try {
+      await questsApi.updatePersonal(editQuest.id, {
+        title: editQuest.title,
+        description: editQuest.description || undefined,
+        icon: editQuest.icon,
+        trackingType: trackingMap[editQuest.trackingType as keyof typeof trackingMap],
+        proofRequired: proofRequiredMap[editQuest.proofRequired],
+        targetValue: editQuest.targetValue,
+        unit: editQuest.unit,
+      });
+      setEditQuest(null);
+      await loadData();
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : 'Failed to update quest');
     } finally {
       setSubmitting(false);
     }
@@ -181,6 +231,54 @@ export default function LobbyPage() {
         </div>
       )}
 
+      <div className="lobby__friends-panel pixel-card">
+        <div className="lobby__friends-header">
+          <h3>Friends</h3>
+          <small>Keep your party close and invite new allies.</small>
+        </div>
+        <div className="lobby__friends-list">
+          {friends.length === 0 ? (
+            <p>No friends yet. Send a request to start adventuring together.</p>
+          ) : (
+            friends.map((friend) => (
+              <div key={friend.id} className="friend-item">
+                <span>{friend.avatar}</span>
+                <span>{friend.username}</span>
+              </div>
+            ))
+          )}
+        </div>
+        <div className="lobby__friends-request">
+          <input
+            type="email"
+            placeholder="Friend email"
+            value={friendEmail}
+            onChange={(e) => setFriendEmail(e.target.value)}
+            className="pixel-input"
+          />
+          <button
+            className="pixel-btn"
+            onClick={async () => {
+              if (!friendEmail.trim()) return;
+              setSubmitting(true);
+              setError('');
+              try {
+                await friendsApi.request(friendEmail.trim());
+                setFriendEmail('');
+                await loadData();
+              } catch (err) {
+                setError(err instanceof ApiError ? err.message : 'Failed to send request');
+              } finally {
+                setSubmitting(false);
+              }
+            }}
+            disabled={!friendEmail.trim() || submitting}
+          >
+            Send Request
+          </button>
+        </div>
+      </div>
+
       <div className="lobby__quests-header">
         <h2 className="pixel-heading">📜 ACTIVE QUESTS 📜</h2>
       </div>
@@ -213,20 +311,47 @@ export default function LobbyPage() {
                 </span>
               </div>
 
+              <div className="quest-card__meta">
+                <span className="quest-card__tag">
+                  {quest.proofRequired === 'none'
+                    ? 'No proof'
+                    : quest.proofRequired === 'text'
+                      ? 'Text proof required'
+                      : 'Image proof required'}
+                </span>
+              </div>
+              {quest.notes.length > 0 && (
+                <div className="quest-card__notes">
+                  <strong>Notes:</strong>
+                  <ol>
+                    {quest.notes.map((note, index) => (
+                      <li key={index}>{note}</li>
+                    ))}
+                  </ol>
+                </div>
+              )}
               <div className="quest-card__footer">
                 <span className="quest-card__streak">
                   🔥 Streak: {quest.streak}
                 </span>
-                {quest.currentValue < quest.targetValue ? (
+                <div className="quest-card__actions">
                   <button
                     className="pixel-btn pixel-btn--small"
-                    onClick={() => handleLogProgress(quest)}
+                    onClick={() => setEditQuest(quest)}
                   >
-                    Log Progress
+                    Edit
                   </button>
-                ) : (
-                  <span className="quest-card__completed">Completed! ✅</span>
-                )}
+                  {quest.currentValue < quest.targetValue ? (
+                    <button
+                      className="pixel-btn pixel-btn--small"
+                      onClick={() => handleLogProgress(quest)}
+                    >
+                      Log Progress
+                    </button>
+                  ) : (
+                    <span className="quest-card__completed">Completed! ✅</span>
+                  )}
+                </div>
               </div>
             </div>
           </div>
@@ -330,9 +455,25 @@ export default function LobbyPage() {
                   >
                     <option value="binary">Yes/No</option>
                     <option value="numeric">Numeric</option>
-                    <option value="timer">Timer</option>
                   </select>
                 </div>
+              </div>
+              <div className="modal__field">
+                <label>Proof Required:</label>
+                <select
+                  value={newQuest.proofRequired}
+                  onChange={(e) =>
+                    setNewQuest({
+                      ...newQuest,
+                      proofRequired: e.target.value as typeof newQuest.proofRequired,
+                    })
+                  }
+                  className="pixel-input"
+                >
+                  <option value="none">None</option>
+                  <option value="text">Text proof</option>
+                  <option value="image">Image proof</option>
+                </select>
               </div>
               <div className="modal__row">
                 <div className="modal__field">
@@ -381,6 +522,141 @@ export default function LobbyPage() {
         </div>
       )}
 
+      {editQuest && (
+        <div
+          className="modal-overlay"
+          onClick={() => !submitting && setEditQuest(null)}
+        >
+          <div className="modal pixel-card" onClick={(e) => e.stopPropagation()}>
+            <div className="modal__header">
+              <h3>Edit Quest</h3>
+              <button
+                className="modal__close"
+                onClick={() => setEditQuest(null)}
+              >
+                ✖
+              </button>
+            </div>
+            <div className="modal__body">
+              <div className="modal__field">
+                <label>Quest Title:</label>
+                <input
+                  type="text"
+                  value={editQuest.title}
+                  onChange={(e) =>
+                    setEditQuest({ ...editQuest, title: e.target.value })
+                  }
+                  className="pixel-input"
+                />
+              </div>
+              <div className="modal__field">
+                <label>Description:</label>
+                <textarea
+                  value={editQuest.description}
+                  onChange={(e) =>
+                    setEditQuest({ ...editQuest, description: e.target.value })
+                  }
+                  className="pixel-input pixel-input--textarea"
+                  rows={2}
+                />
+              </div>
+              <div className="modal__field">
+                <label>Icon:</label>
+                <div className="modal__icon-grid">
+                  {availableIcons.map((icon) => (
+                    <button
+                      key={icon}
+                      type="button"
+                      className={`modal__icon-btn ${editQuest.icon === icon ? 'active' : ''}`}
+                      onClick={() => setEditQuest({ ...editQuest, icon })}
+                    >
+                      {icon}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <div className="modal__row">
+                <div className="modal__field">
+                  <label>Tracking:</label>
+                  <select
+                    value={editQuest.trackingType}
+                    onChange={(e) =>
+                      setEditQuest({
+                        ...editQuest,
+                        trackingType: e.target.value as typeof editQuest.trackingType,
+                      })
+                    }
+                    className="pixel-input"
+                  >
+                    <option value="binary">Yes/No</option>
+                    <option value="numeric">Numeric</option>
+                  </select>
+                </div>
+                <div className="modal__field">
+                  <label>Proof Required:</label>
+                  <select
+                    value={editQuest.proofRequired}
+                    onChange={(e) =>
+                      setEditQuest({
+                        ...editQuest,
+                        proofRequired: e.target.value as typeof editQuest.proofRequired,
+                      })
+                    }
+                    className="pixel-input"
+                  >
+                    <option value="none">None</option>
+                    <option value="text">Text proof</option>
+                    <option value="image">Image proof</option>
+                  </select>
+                </div>
+              </div>
+              <div className="modal__row">
+                <div className="modal__field">
+                  <label>Target Value:</label>
+                  <input
+                    type="number"
+                    value={editQuest.targetValue}
+                    onChange={(e) =>
+                      setEditQuest({
+                        ...editQuest,
+                        targetValue: parseFloat(e.target.value) || 0,
+                      })
+                    }
+                    className="pixel-input"
+                  />
+                </div>
+                <div className="modal__field">
+                  <label>Unit:</label>
+                  <input
+                    type="text"
+                    value={editQuest.unit}
+                    onChange={(e) =>
+                      setEditQuest({ ...editQuest, unit: e.target.value })
+                    }
+                    className="pixel-input"
+                  />
+                </div>
+              </div>
+            </div>
+            <div className="modal__footer">
+              <button
+                className="pixel-btn"
+                onClick={handleUpdateQuest}
+                disabled={!editQuest.title || submitting}
+              >
+                Save Changes
+              </button>
+              <button
+                className="pixel-btn pixel-btn--secondary"
+                onClick={() => setEditQuest(null)}
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {selectedQuest && (
         <div
           className="modal-overlay"
@@ -401,17 +677,28 @@ export default function LobbyPage() {
                 <strong>{selectedQuest.title}</strong> –{' '}
                 {selectedQuest.description}
               </p>
+              {selectedQuest.trackingType === 'numeric' ? (
+                <div className="modal__field">
+                  <label>Amount ({selectedQuest.unit}):</label>
+                  <input
+                    type="number"
+                    value={logValue}
+                    onChange={(e) => setLogValue(e.target.value)}
+                    className="pixel-input"
+                  />
+                </div>
+              ) : (
+                <div className="modal__field">
+                  <label>Mark as completed?</label>
+                  <div className="modal__toggle-row">
+                    <span>Yes / No action will complete this goal.</span>
+                  </div>
+                </div>
+              )}
               <div className="modal__field">
-                <label>Amount ({selectedQuest.unit}):</label>
-                <input
-                  type="number"
-                  value={logValue}
-                  onChange={(e) => setLogValue(e.target.value)}
-                  className="pixel-input"
-                />
-              </div>
-              <div className="modal__field">
-                <label>Note (optional):</label>
+                <label>
+                  Note {selectedQuest.proofRequired === 'text' ? '(required)' : '(optional)'}:
+                </label>
                 <textarea
                   value={logNote}
                   onChange={(e) => setLogNote(e.target.value)}
@@ -419,12 +706,36 @@ export default function LobbyPage() {
                   rows={3}
                 />
               </div>
+              {selectedQuest.proofRequired === 'image' && (
+                <div className="modal__field">
+                  <label>Proof Image (required):</label>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={(e) => setLogProofImage(e.target.files?.[0] || null)}
+                    className="pixel-input"
+                  />
+                  {logProofImage && (
+                    <div className="modal__image-preview">
+                      <img
+                        src={URL.createObjectURL(logProofImage)}
+                        alt="Proof preview"
+                        style={{ maxWidth: '200px', maxHeight: '200px', marginTop: '10px' }}
+                      />
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
             <div className="modal__footer">
               <button
                 className="pixel-btn"
                 onClick={submitProgress}
-                disabled={submitting}
+                disabled={
+                  submitting ||
+                  (selectedQuest.proofRequired === 'text' && !logNote.trim()) ||
+                  (selectedQuest.proofRequired === 'image' && !logProofImage)
+                }
               >
                 {submitting ? 'Saving...' : 'Submit'}
               </button>

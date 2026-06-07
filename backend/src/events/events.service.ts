@@ -6,6 +6,8 @@ import {
 import { DatabaseService } from '../database/database.service';
 import { UserProgressService } from '../users/user-progress.service';
 import { ContributeEventDto } from './dto/contribute-event.dto';
+import { CreateEventDto } from './dto/create-event.dto';
+import { UpdateEventDto } from './dto/update-event.dto';
 
 @Injectable()
 export class EventsService {
@@ -42,6 +44,66 @@ export class EventsService {
     }
 
     return this.formatEvent(event, new Date());
+  }
+
+  async createEvent(dto: CreateEventDto) {
+    const event = await this.database.event.create({
+      data: {
+        title: dto.title,
+        description: dto.description,
+        icon: dto.icon,
+        targetValue: dto.targetValue,
+        currentValue: 0,
+        unit: dto.unit,
+        startDate: new Date(dto.startDate),
+        endDate: new Date(dto.endDate),
+        rewardXp: dto.rewardXp,
+        rewardCoins: dto.rewardCoins,
+      },
+      include: {
+        rewardItem: true,
+        _count: { select: { participations: true } },
+      },
+    });
+
+    return this.formatEvent(event, new Date());
+  }
+
+  async updateEvent(id: string, dto: UpdateEventDto) {
+    const event = await this.database.event.findUnique({ where: { id } });
+    if (!event) {
+      throw new NotFoundException('Event not found');
+    }
+
+    const updated = await this.database.event.update({
+      where: { id },
+      data: {
+        title: dto.title,
+        description: dto.description,
+        icon: dto.icon,
+        targetValue: dto.targetValue,
+        unit: dto.unit,
+        startDate: dto.startDate ? new Date(dto.startDate) : undefined,
+        endDate: dto.endDate ? new Date(dto.endDate) : undefined,
+        rewardXp: dto.rewardXp,
+        rewardCoins: dto.rewardCoins,
+      },
+      include: {
+        rewardItem: true,
+        _count: { select: { participations: true } },
+      },
+    });
+
+    return this.formatEvent(updated, new Date());
+  }
+
+  async deleteEvent(id: string) {
+    const event = await this.database.event.findUnique({ where: { id } });
+    if (!event) {
+      throw new NotFoundException('Event not found');
+    }
+    await this.database.event.delete({ where: { id } });
+    return { deleted: true };
   }
 
   async joinEvent(userId: string, eventId: string) {

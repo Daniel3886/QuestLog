@@ -19,8 +19,8 @@ export class FriendsService {
         ],
       },
       include: {
-        user: { select: { id: true, username: true, streak: true } },
-        friend: { select: { id: true, username: true, streak: true } },
+        user: { select: { id: true, username: true, avatar: true, streak: true } },
+        friend: { select: { id: true, username: true, avatar: true, streak: true } },
       },
     });
 
@@ -30,6 +30,7 @@ export class FriendsService {
         id: f.id,
         userId: other.id,
         username: other.username,
+        avatar: other.avatar,
         streak: other.streak,
         since: f.updatedAt,
       };
@@ -52,17 +53,18 @@ export class FriendsService {
     }));
   }
 
-  async sendRequest(userId: string, friendId: string) {
-    if (userId === friendId) {
-      throw new BadRequestException('Cannot add yourself');
-    }
-
+  async sendRequest(userId: string, friendEmail: string) {
     const target = await this.database.user.findUnique({
-      where: { id: friendId },
+      where: { email: friendEmail },
     });
     if (!target) {
       throw new NotFoundException('User not found');
     }
+    if (userId === target.id) {
+      throw new BadRequestException('Cannot add yourself');
+    }
+
+    const friendId = target.id;
 
     const existing = await this.database.friend.findFirst({
       where: {

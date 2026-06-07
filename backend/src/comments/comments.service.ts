@@ -56,12 +56,12 @@ export class CommentsService {
     };
   }
 
-  async deleteComment(userId: string, id: string) {
+  async deleteComment(userId: string, id: string, isAdmin = false) {
     const comment = await this.database.comment.findUnique({ where: { id } });
     if (!comment) {
       throw new NotFoundException('Comment not found');
     }
-    if (comment.userId !== userId) {
+    if (!isAdmin && comment.userId !== userId) {
       throw new ForbiddenException('Cannot delete this comment');
     }
 

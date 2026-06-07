@@ -16,4 +16,13 @@ export class ReportsService {
       },
     });
   }
+
+  async listReports() {
+    return this.database.report.findMany({
+      orderBy: { createdAt: 'desc' },
+      include: {
+        user: { select: { id: true, username: true, email: true } },
+      },
+    });
+  }
 }

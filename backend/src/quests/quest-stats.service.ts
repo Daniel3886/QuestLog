@@ -24,7 +24,21 @@ export class QuestStatsService {
       today,
     );
 
-    const stats = { todayProgress, todayComplete, currentStreak };
+    const recentNotes = await this.database.questLog.findMany({
+      where: {
+        questId: quest.id,
+        note: { not: null },
+      },
+      orderBy: { logDate: 'desc' },
+      take: 3,
+      select: { note: true },
+    });
+
+    const notes = recentNotes
+      .map((log) => log.note)
+      .filter((note): note is string => !!note);
+
+    const stats = { todayProgress, todayComplete, currentStreak, notes };
 
     return {
       ...quest,
