@@ -2,6 +2,7 @@ import { getAccessToken } from './auth';
 import type {
   AuthTokens,
   FriendSummary,
+  FriendRequest,
   GlobalEvent,
   Guild,
   GuildQuest,
@@ -180,15 +181,16 @@ export const commentsApi = {
 
 export const friendsApi = {
   list: () => apiFetch<FriendSummary[]>('/friends'),
+  listPending: () => apiFetch<FriendRequest[]>('/friends/pending'),  // new
   request: (email: string) =>
     apiFetch('/friends/request', {
       method: 'POST',
       body: JSON.stringify({ friendEmail: email }),
     }),
-  accept: (userId: string) =>
-    apiFetch(`/friends/${userId}/accept`, { method: 'POST' }),
-  remove: (userId: string) =>
-    apiFetch(`/friends/${userId}`, { method: 'DELETE' }),
+  accept: (requestId: string) =>
+    apiFetch(`/friends/${requestId}/accept`, { method: 'PATCH' }),   // changed param
+  remove: (friendId: string) =>
+    apiFetch(`/friends/${friendId}`, { method: 'DELETE' }),
 };
 
 export const reportsApi = {

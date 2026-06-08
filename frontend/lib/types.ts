@@ -170,3 +170,12 @@ export interface FriendSummary {
   streak: number;
   since: string;
 }
+
+
+export interface FriendRequest {
+  id: string;        
+  userId: string;
+  username: string;
+  avatar: string;
+  createdAt: string;
+}

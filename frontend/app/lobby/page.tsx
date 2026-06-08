@@ -4,7 +4,7 @@ import React, { useCallback, useEffect, useState } from 'react';
 import { ApiError, friendsApi, questsApi, usersApi } from '@/lib/api';
 import { frequencyMap, proofRequiredMap, trackingMap } from '@/lib/enums';
 import { useRequireAuth } from '@/hooks/useRequireAuth';
-import type { FriendSummary, LobbyQuest, UserProfile } from '@/lib/types';
+import type { FriendRequest, FriendSummary, LobbyQuest, UserProfile } from '@/lib/types';
 import ErrorBanner from '@/components/ErrorBanner';
 import './lobby.scss';
 import ThemeSwitcher from '@/components/ThemeSwitcher';
@@ -25,6 +25,7 @@ export default function LobbyPage() {
   const [logProofImage, setLogProofImage] = useState<File | null>(null);
   const [friendEmail, setFriendEmail] = useState('');
   const [friends, setFriends] = useState<FriendSummary[]>([]);
+  const [pendingRequests, setPendingRequests] = useState<FriendRequest[]>([]);
   const [submitting, setSubmitting] = useState(false);
 
   const [newQuest, setNewQuest] = useState({
@@ -41,14 +42,16 @@ export default function LobbyPage() {
   const loadData = useCallback(async () => {
     setError('');
     try {
-      const [profile, questList, friendList] = await Promise.all([
+      const [profile, questList, friendList, pending] = await Promise.all([
         usersApi.me(),
         questsApi.listPersonal(),
         friendsApi.list(),
+        friendsApi.listPending(),
       ] as const);
       setUser(profile);
       setQuests(questList);
       setFriends(friendList);
+      setPendingRequests(pending);
     } catch (err) {
       setError(err instanceof ApiError ? err.message : 'Failed to load lobby');
     } finally {
@@ -328,6 +331,36 @@ export default function LobbyPage() {
           <h3>Friends</h3>
           <small>Keep your party close and invite new allies.</small>
         </div>
+
+        {pendingRequests.length > 0 && (
+        <div className="lobby__pending-requests">
+          <h4>Pending requests</h4>
+          {pendingRequests.map((req) => (
+            <div key={req.id} className="friend-item pending">
+              <span>{req.avatar}</span>
+              <span>{req.username}</span>
+              <button
+                className="pixel-btn pixel-btn--small"
+                onClick={async () => {
+                  setSubmitting(true);
+                  try {
+                    await friendsApi.accept(req.id);
+                    await loadData(); // refresh friends and pending
+                  } catch (err) {
+                    setError(err instanceof ApiError ? err.message : 'Failed to accept request');
+                  } finally {
+                    setSubmitting(false);
+                  }
+                }}
+                disabled={submitting}
+              >
+                Accept
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
+
         <div className="lobby__friends-list">
           {friends.length === 0 ? (
             <p>No friends yet. Send a request to start adventuring together.</p>

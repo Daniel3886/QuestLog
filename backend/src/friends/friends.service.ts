@@ -38,20 +38,18 @@ export class FriendsService {
   }
 
   async listPending(userId: string) {
-    const incoming = await this.database.friend.findMany({
-      where: { friendId: userId, status: $Enums.FriendStatus.PENDING },
-      include: {
-        user: { select: { id: true, username: true } },
-      },
-    });
-
-    return incoming.map((f) => ({
-      id: f.id,
-      fromUserId: f.userId,
-      fromUsername: f.user.username,
-      createdAt: f.createdAt,
-    }));
-  }
+  const pending = await this.database.friend.findMany({
+    where: { friendId: userId, status: 'PENDING' },
+    include: { user: { select: { id: true, username: true, avatar: true } } },
+  });
+  return pending.map(p => ({
+    id: p.id,
+    userId: p.user.id,
+    username: p.user.username,
+    avatar: p.user.avatar,
+    createdAt: p.createdAt,
+  }));
+}
 
   async sendRequest(userId: string, friendEmail: string) {
     const target = await this.database.user.findUnique({
