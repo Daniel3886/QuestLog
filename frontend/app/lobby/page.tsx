@@ -269,13 +269,13 @@ export default function LobbyPage() {
               </div>
 
               <div className="quest-card__meta">
-                <span className="quest-card__tag">
+                {/* <span className="quest-card__tag">
                   {quest.proofRequired === 'none'
                     ? 'No proof'
                     : quest.proofRequired === 'text'
                       ? 'Text proof required'
                       : 'Image proof required'}
-                </span>
+                </span> */}
               </div>
               {quest.notes.length > 0 && (
                 <div className="quest-card__notes">
@@ -493,7 +493,7 @@ export default function LobbyPage() {
                   </select>
                 </div>
               </div>
-              <div className="modal__field">
+              {/* <div className="modal__field">
                 <label>Proof Required:</label>
                 <select
                   value={newQuest.proofRequired}
@@ -509,7 +509,7 @@ export default function LobbyPage() {
                   <option value="text">Text proof</option>
                   <option value="image">Image proof</option>
                 </select>
-              </div>
+              </div> */}
               <div className="modal__row">
                 <div className="modal__field">
                   <label>Target Value:</label>
@@ -732,7 +732,7 @@ export default function LobbyPage() {
               )}
               <div className="modal__field">
                 <label>
-                  Note {selectedQuest.proofRequired === 'text' ? '(required)' : '(optional)'}:
+                  Note (optional):
                 </label>
                 <textarea
                   value={logNote}
@@ -767,9 +767,7 @@ export default function LobbyPage() {
                 className="pixel-btn"
                 onClick={submitProgress}
                 disabled={
-                  submitting ||
-                  (selectedQuest.proofRequired === 'text' && !logNote.trim()) ||
-                  (selectedQuest.proofRequired === 'image' && !logProofImage)
+                  submitting 
                 }
               >
                 {submitting ? 'Saving...' : 'Submit'}

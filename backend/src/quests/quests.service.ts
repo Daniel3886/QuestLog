@@ -242,67 +242,80 @@ export class QuestsService {
   }
 
   async updatePublicQuestProgress(
-    userId: string,
-    questId: string,
-    dto: UpdateQuestProgressDto,
-  ) {
-    const quest = await this.database.quest.findFirst({
-      where: { id: questId, type: $Enums.QuestType.PUBLIC },
-    });
-    if (!quest) {
-      throw new NotFoundException('Public quest not found');
-    }
-    if (quest.creatorId === userId) {
-      throw new ForbiddenException(
-        'You cannot complete a public quest you created',
-      );
-    }
-
-    const enrollment = await this.database.personalQuest.findUnique({
-      where: { userId_questId: { userId, questId } },
-    });
-    if (!enrollment) {
-      throw new BadRequestException('Join this quest before logging progress');
-    }
-
-    const wasComplete =
-      enrollment.status === $Enums.PersonalQuestStatus.COMPLETED ||
-      enrollment.currentValue >= quest.targetValue;
-
-    const currentValue = Math.min(dto.currentValue, quest.targetValue);
-    const isComplete = currentValue >= quest.targetValue;
-
-    const updated = await this.database.personalQuest.update({
-      where: { id: enrollment.id },
-      data: {
-        currentValue,
-        status: isComplete
-          ? $Enums.PersonalQuestStatus.COMPLETED
-          : $Enums.PersonalQuestStatus.ACTIVE,
-      },
-    });
-
-    if (isComplete && !wasComplete) {
-      await this.userProgress.rewardPublicQuestCompletion(userId);
-    }
-
-    return {
-      enrollment: updated,
-      isComplete,
-      quest: formatPublicQuest({
-        ...quest,
-        creator: await this.database.user.findUniqueOrThrow({
-          where: { id: quest.creatorId },
-          select: { username: true, avatar: true },
-        }),
-        _count: {
-          personalQuests: await this.database.personalQuest.count({
-            where: { questId },
-          }),
-        },
-      }),
-    };
+  userId: string,
+  questId: string,
+  dto: UpdateQuestProgressDto,
+) {
+  const quest = await this.database.quest.findFirst({
+    where: { id: questId, type: $Enums.QuestType.PUBLIC },
+  });
+  if (!quest) {
+    throw new NotFoundException('Public quest not found');
   }
+  if (quest.creatorId === userId) {
+    throw new ForbiddenException(
+      'You cannot complete a public quest you created',
+    );
+  }
+
+  const enrollment = await this.database.personalQuest.findUnique({
+    where: { userId_questId: { userId, questId } },
+  });
+  if (!enrollment) {
+    throw new BadRequestException('Join this quest before logging progress');
+  }
+
+  const wasComplete =
+    enrollment.status === $Enums.PersonalQuestStatus.COMPLETED ||
+    enrollment.currentValue >= quest.targetValue;
+
+  const currentValue = Math.min(dto.currentValue, quest.targetValue);
+  const isComplete = currentValue >= quest.targetValue;
+
+  // Update personalQuest
+  const updated = await this.database.personalQuest.update({
+    where: { id: enrollment.id },
+    data: {
+      currentValue,
+      status: isComplete
+        ? $Enums.PersonalQuestStatus.COMPLETED
+        : $Enums.PersonalQuestStatus.ACTIVE,
+    },
+  });
+
+  // 🆕 Create a quest log entry
+  await this.database.questLog.create({
+    data: {
+      userId,
+      questId,
+      currentValue: dto.currentValue,   // raw value before clamping? or the delta? Usually the logged value
+      note: dto.note,
+      proofUrl: dto.proofUrl,
+      logDate: new Date(),
+    },
+  });
+
+  if (isComplete && !wasComplete) {
+    await this.userProgress.rewardPublicQuestCompletion(userId);
+  }
+
+  return {
+    enrollment: updated,
+    isComplete,
+    quest: formatPublicQuest({
+      ...quest,
+      creator: await this.database.user.findUniqueOrThrow({
+        where: { id: quest.creatorId },
+        select: { username: true, avatar: true },
+      }),
+      _count: {
+        personalQuests: await this.database.personalQuest.count({
+          where: { questId },
+        }),
+      },
+    }),
+  };
+}
 
   private async assertPublicQuestCreationLimit(creatorId: string) {
     const dayStart = this.dates.toUtcDay();

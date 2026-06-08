@@ -63,7 +63,7 @@ export interface PublicQuest {
   category: string;
   difficulty: string;
   trackingType: string;
-  proofRequired: 'none' | 'text';
+  proofRequired: 'none' | 'text' | 'image';
   targetValue: number;
   unit: string;
   participants: number;

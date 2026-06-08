@@ -128,11 +128,11 @@ export const questsApi = {
     }),
   joinPublic: (id: string) =>
     apiFetch(`/quests/public/${id}/join`, { method: 'POST' }),
-  updatePublicProgress: (id: string, currentValue: number, note?: string) =>
-    apiFetch(`/quests/public/${id}/progress`, {
-      method: 'PATCH',
-      body: JSON.stringify({ currentValue, note }),
-    }),
+  updatePublicProgress: (questId: string, value: number, note?: string, proofUrl?: string) =>
+  apiFetch(`/quests/public/${questId}/progress`, {
+    method: 'PATCH',
+    body: JSON.stringify({ currentValue: value, note, proofUrl }),
+  }),
   updatePersonal: (id: string, body: Record<string, unknown>) =>
     apiFetch(`/quests/${id}`, {
       method: 'PATCH',

@@ -43,6 +43,8 @@ export default function TavernPage() {
   const [selectedQuest, setSelectedQuest] = useState<PublicQuest | null>(null);
   const [publicProgress, setPublicProgress] = useState('');
   const [publicNote, setPublicNote] = useState('');
+  const [publicProofImage, setPublicProofImage] = useState<File | null>(null);
+  const [publicProofPreview, setPublicProofPreview] = useState<string | null>(null);
 
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [newComment, setNewComment] = useState('');
@@ -57,7 +59,7 @@ export default function TavernPage() {
   category: 'fitness' as 'fitness' | 'education' | 'creativity' | 'wellness' | 'other',
   difficulty: 'medium' as 'easy' | 'medium' | 'hard',
   trackingType: 'binary' as 'binary' | 'numeric',
-  proofRequired: 'none' as 'none' | 'text',
+  proofRequired: 'none' as 'none' | 'text' | 'image',
   targetValue: 1,
   unit: 'times',
   icon: '⚔️',
@@ -140,6 +142,14 @@ export default function TavernPage() {
     }
   };
 
+  const resetJoinModal = () => {
+    setSelectedQuest(null);
+    setPublicProgress('');
+    setPublicNote('');
+    setPublicProofImage(null);
+    setPublicProofPreview(null);
+  };
+
   const confirmJoinQuest = async () => {
     if (!selectedQuest || !requireAuth()) return;
     setSubmitting(true);
@@ -151,15 +161,23 @@ export default function TavernPage() {
         value = selectedQuest.targetValue;
       }
       if (!Number.isNaN(value) && value > 0) {
+        let proofUrl: string | undefined;
+        if (selectedQuest.proofRequired === 'image' && publicProofImage) {
+          const reader = new FileReader();
+          proofUrl = await new Promise<string>((resolve, reject) => {
+            reader.onload = () => resolve(reader.result as string);
+            reader.onerror = () => reject(new Error('Failed to read image'));
+            reader.readAsDataURL(publicProofImage);
+          });
+        }
         await questsApi.updatePublicProgress(
           selectedQuest.id,
           Math.min(value, selectedQuest.targetValue),
           publicNote || undefined,
+          proofUrl,   // pass image data URL if any
         );
       }
-      setSelectedQuest(null);
-      setPublicProgress('');
-      setPublicNote('');
+      resetJoinModal();
       await loadTavern();
     } catch (err) {
       setError(err instanceof ApiError ? err.message : 'Failed to join quest');
@@ -468,8 +486,12 @@ export default function TavernPage() {
                 </div>
                 <div className="quest-card__meta">
                   <span className="quest-card__tag">
-                    {quest.proofRequired === 'text' ? 'Proof required' : 'No proof'}
-                  </span>
+                    {quest.proofRequired === 'text'
+                    ? 'Text proof required'
+                    : quest.proofRequired === 'image'
+                    ? 'Image proof required'
+                    : 'No proof'}
+                    </span>
                 </div>
                 <div className="quest-card__actions">
                   <button
@@ -655,14 +677,14 @@ export default function TavernPage() {
       {selectedQuest && (
         <div
           className="modal-overlay"
-          onClick={() => !submitting && setSelectedQuest(null)}
+          onClick={() => !submitting && resetJoinModal()}
         >
           <div className="modal pixel-card" onClick={(e) => e.stopPropagation()}>
             <div className="modal__header">
               <h3>Join {selectedQuest.title}</h3>
               <button
                 className="modal__close"
-                onClick={() => setSelectedQuest(null)}
+                onClick={() => resetJoinModal()}
               >
                 ✖
               </button>
@@ -691,14 +713,40 @@ export default function TavernPage() {
               )}
               <div className="modal__field">
                 <label>
-                  Proof {selectedQuest.proofRequired === 'text' ? '(required)' : '(optional)'}:
+                  Proof {selectedQuest.proofRequired === 'text' || selectedQuest.proofRequired === 'image' ? '(required)' : '(optional)'}:
                 </label>
+                {selectedQuest.proofRequired === 'text' && (
                 <textarea
                   value={publicNote}
                   onChange={(e) => setPublicNote(e.target.value)}
                   className="pixel-input pixel-input--textarea"
                   rows={3}
+                  placeholder="Describe your completion..."
                 />
+              )}
+              {selectedQuest.proofRequired === 'image' && (
+                <>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={(e) => {
+                      const file = e.target.files?.[0];
+                      if (file) {
+                        setPublicProofImage(file);
+                        const reader = new FileReader();
+                        reader.onloadend = () => setPublicProofPreview(reader.result as string);
+                        reader.readAsDataURL(file);
+                      }
+                    }}
+                    className="pixel-input"
+                  />
+                  {publicProofPreview && (
+                    <div className="image-preview" style={{ marginTop: '0.5rem' }}>
+                      <img src={publicProofPreview} alt="Preview" style={{ maxWidth: '100%', maxHeight: '150px', border: '2px solid var(--pixel-border)' }} />
+                    </div>
+                  )}
+                </>
+              )}
               </div>
             </div>
             <div className="modal__footer">
@@ -706,9 +754,8 @@ export default function TavernPage() {
                 className="pixel-btn"
                 onClick={confirmJoinQuest}
                 disabled={
-                  submitting ||
-                  (selectedQuest.proofRequired === 'text' && !publicNote.trim())
-                }
+                  submitting ||(selectedQuest.proofRequired === 'text' && !publicNote.trim()) ||
+                  (selectedQuest.proofRequired === 'image' && !publicProofImage)}
               >
                 {submitting ? 'Joining...' : 'Join Quest'}
               </button>
@@ -855,6 +902,7 @@ export default function TavernPage() {
                   >
                     <option value="none">None</option>
                     <option value="text">Text proof</option>
+                    <option value="image">Image proof</option>
                   </select>
                 </div>
                 <div className="modal__field">

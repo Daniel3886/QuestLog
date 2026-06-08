@@ -29,6 +29,5 @@ export class UpdateQuestProgressDto {
 
   @IsString()
   @IsOptional()
-  @MaxLength(500)
   proofUrl?: string;
 }
