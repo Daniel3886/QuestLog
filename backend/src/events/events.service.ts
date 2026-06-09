@@ -18,7 +18,7 @@ export class EventsService {
 
   async listEvents() {
     const now = new Date();
-    const events = await this.database.event.findMany({
+    const events = await this.database.prisma.event.findMany({
       where: { endDate: { gte: now } },
       include: {
         rewardItem: true,
@@ -31,7 +31,7 @@ export class EventsService {
   }
 
   async getEvent(id: string) {
-    const event = await this.database.event.findUnique({
+    const event = await this.database.prisma.event.findUnique({
       where: { id },
       include: {
         rewardItem: true,
@@ -47,7 +47,7 @@ export class EventsService {
   }
 
   async createEvent(dto: CreateEventDto) {
-    const event = await this.database.event.create({
+    const event = await this.database.prisma.event.create({
       data: {
         title: dto.title,
         description: dto.description,
@@ -70,12 +70,12 @@ export class EventsService {
   }
 
   async updateEvent(id: string, dto: UpdateEventDto) {
-    const event = await this.database.event.findUnique({ where: { id } });
+    const event = await this.database.prisma.event.findUnique({ where: { id } });
     if (!event) {
       throw new NotFoundException('Event not found');
     }
 
-    const updated = await this.database.event.update({
+    const updated = await this.database.prisma.event.update({
       where: { id },
       data: {
         title: dto.title,
@@ -98,16 +98,16 @@ export class EventsService {
   }
 
   async deleteEvent(id: string) {
-    const event = await this.database.event.findUnique({ where: { id } });
+    const event = await this.database.prisma.event.findUnique({ where: { id } });
     if (!event) {
       throw new NotFoundException('Event not found');
     }
-    await this.database.event.delete({ where: { id } });
+    await this.database.prisma.event.delete({ where: { id } });
     return { deleted: true };
   }
 
   async joinEvent(userId: string, eventId: string) {
-    const event = await this.database.event.findUnique({
+    const event = await this.database.prisma.event.findUnique({
       where: { id: eventId },
     });
     if (!event) {
@@ -117,7 +117,7 @@ export class EventsService {
       throw new BadRequestException('Event has ended');
     }
 
-    await this.database.participation.upsert({
+    await this.database.prisma.participation.upsert({
       where: { userId_eventId: { userId, eventId } },
       create: { userId, eventId },
       update: {},
@@ -129,7 +129,7 @@ export class EventsService {
   }
 
   async contribute(userId: string, eventId: string, dto: ContributeEventDto) {
-    const event = await this.database.event.findUnique({
+    const event = await this.database.prisma.event.findUnique({
       where: { id: eventId },
     });
     if (!event) {
@@ -139,7 +139,7 @@ export class EventsService {
       throw new BadRequestException('Event has ended');
     }
 
-    const participation = await this.database.participation.upsert({
+    const participation = await this.database.prisma.participation.upsert({
       where: { userId_eventId: { userId, eventId } },
       create: {
         userId,
@@ -151,7 +151,7 @@ export class EventsService {
       },
     });
 
-    const updated = await this.database.event.update({
+    const updated = await this.database.prisma.event.update({
       where: { id: eventId },
       data: {
         currentValue: { increment: dto.amount },
@@ -180,7 +180,7 @@ export class EventsService {
       return false;
     }
 
-    const participation = await this.database.participation.findUnique({
+    const participation = await this.database.prisma.participation.findUnique({
       where: { userId_eventId: { userId, eventId: event.id } },
     });
     if (!participation || participation.rewardsClaimed) {
@@ -192,7 +192,7 @@ export class EventsService {
       event.rewardXp,
       event.rewardCoins,
     );
-    await this.database.participation.update({
+    await this.database.prisma.participation.update({
       where: { userId_eventId: { userId, eventId: event.id } },
       data: { rewardsClaimed: true },
     });
@@ -249,5 +249,32 @@ export class EventsService {
       progressPercent: Math.round(progress),
       status,
     };
+  }
+
+  async findAllEvents() {
+    const events = await this.database.prisma.event.findMany({
+      include: {
+        rewardItem: true,
+        _count: { select: { participations: true } },
+      },
+      orderBy: { startDate: 'desc' },
+    });
+    return events.map((event) => this.formatEvent(event, new Date()));
+  }
+
+  async create(dto: CreateEventDto) {
+    return this.createEvent(dto);
+  }
+
+  async update(id: string, dto: UpdateEventDto) {
+    return this.updateEvent(id, dto);
+  }
+
+  async delete(id: string) {
+    return this.deleteEvent(id);
+  }
+
+  async findAll() {
+    return this.findAllEvents();
   }
 }

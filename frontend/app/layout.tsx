@@ -3,6 +3,7 @@ import { Geist, Geist_Mono } from 'next/font/google';
 import './globals.scss';
 import Link from 'next/link';
 import SiteHeader from '@/components/SiteHeader';
+import BugReportButton from '@/components/BugReportButton';
 
 const geistSans = Geist({
   variable: '--font-geist-sans',
@@ -39,6 +40,7 @@ export default function RootLayout({
               <Link href="/about">About</Link>
               <Link href="/terms">Terms</Link>
               <Link href="/privacy">Privacy</Link>
+              <BugReportButton />
             </div>
           </div>
         </footer>

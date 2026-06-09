@@ -46,14 +46,14 @@ export class GuildsService {
   constructor(private readonly database: DatabaseService) {}
 
   async createGuild(userId: string, dto: CreateGuildDto) {
-    const existing = await this.database.guildMember.findFirst({
+    const existing = await this.database.prisma.guildMember.findFirst({
       where: { userId },
     });
     if (existing) {
       throw new BadRequestException('You are already in a guild');
     }
 
-    const guild = await this.database.guild.create({
+    const guild = await this.database.prisma.guild.create({
       data: {
         name: dto.name,
         description: dto.description,
@@ -69,7 +69,7 @@ export class GuildsService {
   }
 
   async getMyGuild(userId: string) {
-    const membership = await this.database.guildMember.findFirst({
+    const membership = await this.database.prisma.guildMember.findFirst({
       where: { userId },
       include: {
         guild: { include: guildInclude },
@@ -85,7 +85,7 @@ export class GuildsService {
 
   async getGuild(userId: string, guildId: string) {
     await this.ensureMember(guildId, userId);
-    const guild = await this.database.guild.findUnique({
+    const guild = await this.database.prisma.guild.findUnique({
       where: { id: guildId },
       include: guildInclude,
     });
@@ -100,7 +100,7 @@ export class GuildsService {
   async updateGuild(userId: string, guildId: string, dto: UpdateGuildDto) {
     await this.ensureLeader(guildId, userId);
 
-    const guild = await this.database.guild.update({
+    const guild = await this.database.prisma.guild.update({
       where: { id: guildId },
       data: {
         name: dto.name,
@@ -114,14 +114,14 @@ export class GuildsService {
   }
 
   async joinGuild(userId: string, guildId: string) {
-    const existing = await this.database.guildMember.findFirst({
+    const existing = await this.database.prisma.guildMember.findFirst({
       where: { userId },
     });
     if (existing) {
       throw new BadRequestException('You are already in a guild');
     }
 
-    const guild = await this.database.guild.findUnique({
+    const guild = await this.database.prisma.guild.findUnique({
       where: { id: guildId },
       include: { members: true },
     });
@@ -132,7 +132,7 @@ export class GuildsService {
       throw new BadRequestException('Guild is full');
     }
 
-    await this.database.guildMember.create({
+    await this.database.prisma.guildMember.create({
       data: { guildId, userId },
     });
 
@@ -142,7 +142,7 @@ export class GuildsService {
   async leaveGuild(userId: string, guildId: string) {
     const member = await this.ensureMember(guildId, userId);
     if (member.role === $Enums.GuildMemberRole.LEADER) {
-      const memberCount = await this.database.guildMember.count({
+      const memberCount = await this.database.prisma.guildMember.count({
         where: { guildId },
       });
       if (memberCount > 1) {
@@ -150,18 +150,18 @@ export class GuildsService {
           'Transfer leadership before leaving the guild',
         );
       }
-      await this.database.guild.delete({ where: { id: guildId } });
+      await this.database.prisma.guild.delete({ where: { id: guildId } });
       return { left: true, guildDeleted: true };
     }
 
-    await this.database.guildMember.delete({ where: { id: member.id } });
+    await this.database.prisma.guildMember.delete({ where: { id: member.id } });
     return { left: true, guildDeleted: false };
   }
 
   async listGuildQuests(userId: string, guildId: string) {
     await this.ensureMember(guildId, userId);
 
-    const quests = await this.database.guildQuest.findMany({
+    const quests = await this.database.prisma.guildQuest.findMany({
       where: { guildId },
       include: {
         quest: { include: { creator: { select: { username: true } } } },
@@ -170,7 +170,7 @@ export class GuildsService {
       orderBy: { createdAt: 'desc' },
     });
 
-    const memberCount = await this.database.guildMember.count({
+    const memberCount = await this.database.prisma.guildMember.count({
       where: { guildId },
     });
 
@@ -184,7 +184,7 @@ export class GuildsService {
   ) {
     await this.ensureMember(guildId, userId);
 
-    const quest = await this.database.quest.create({
+    const quest = await this.database.prisma.quest.create({
       data: {
         creatorId: userId,
         type: $Enums.QuestType.GUILD,
@@ -196,7 +196,7 @@ export class GuildsService {
       },
     });
 
-    const guildQuest = await this.database.guildQuest.create({
+    const guildQuest = await this.database.prisma.guildQuest.create({
       data: {
         guildId,
         questId: quest.id,
@@ -212,7 +212,7 @@ export class GuildsService {
       },
     });
 
-    const memberCount = await this.database.guildMember.count({
+    const memberCount = await this.database.prisma.guildMember.count({
       where: { guildId },
     });
 
@@ -222,7 +222,7 @@ export class GuildsService {
   async voteGuildQuest(userId: string, guildId: string, guildQuestId: string) {
     await this.ensureMember(guildId, userId);
 
-    const guildQuest = await this.database.guildQuest.findFirst({
+    const guildQuest = await this.database.prisma.guildQuest.findFirst({
       where: { id: guildQuestId, guildId },
       include: {
         quest: { include: { creator: { select: { username: true } } } },
@@ -236,13 +236,13 @@ export class GuildsService {
       throw new BadRequestException('Quest is not open for voting');
     }
 
-    const memberCount = await this.database.guildMember.count({
+    const memberCount = await this.database.prisma.guildMember.count({
       where: { guildId },
     });
     const votes = guildQuest.votes + 1;
     const activate = votes >= memberCount;
 
-    const updated = await this.database.guildQuest.update({
+    const updated = await this.database.prisma.guildQuest.update({
       where: { id: guildQuestId },
       data: {
         votes,
@@ -266,7 +266,7 @@ export class GuildsService {
   ) {
     const member = await this.ensureMember(guildId, userId);
 
-    const guildQuest = await this.database.guildQuest.findFirst({
+    const guildQuest = await this.database.prisma.guildQuest.findFirst({
       where: { id: guildQuestId, guildId },
       include: {
         quest: { include: { creator: { select: { username: true } } } },
@@ -286,8 +286,8 @@ export class GuildsService {
     );
     const completed = newValue >= guildQuest.quest.targetValue;
 
-    const [updated] = await this.database.$transaction([
-      this.database.guildQuest.update({
+    const [updated] = await this.database.prisma.$transaction([
+      this.database.prisma.guildQuest.update({
         where: { id: guildQuestId },
         data: {
           currentValue: newValue,
@@ -298,19 +298,19 @@ export class GuildsService {
         rewardItem: true,
       },
       }),
-      this.database.guildMember.update({
+      this.database.prisma.guildMember.update({
         where: { id: member.id },
         data: { contribution: { increment: Math.round(dto.amount) } },
       }),
     ]);
 
     if (completed) {
-      const guild = await this.database.guild.findUnique({
+      const guild = await this.database.prisma.guild.findUnique({
         where: { id: guildId },
       });
       if (guild) {
         const progressed = applyGuildXp(guild.level, guild.xp, 100);
-        await this.database.guild.update({
+        await this.database.prisma.guild.update({
           where: { id: guildId },
           data: {
             gems: { increment: guildQuest.rewardGems },
@@ -321,7 +321,7 @@ export class GuildsService {
       }
     }
 
-    const memberCount = await this.database.guildMember.count({
+    const memberCount = await this.database.prisma.guildMember.count({
       where: { guildId },
     });
 
@@ -390,7 +390,7 @@ export class GuildsService {
   }
 
   private async getGuildBadges(guildId: string) {
-    const entries = await this.database.inventory.findMany({
+    const entries = await this.database.prisma.inventory.findMany({
       where: {
         ownerId: guildId,
         ownerType: $Enums.OwnerType.GUILD,
@@ -410,7 +410,7 @@ export class GuildsService {
   }
 
   private async ensureMember(guildId: string, userId: string) {
-    const member = await this.database.guildMember.findFirst({
+    const member = await this.database.prisma.guildMember.findFirst({
       where: { guildId, userId },
     });
     if (!member) {

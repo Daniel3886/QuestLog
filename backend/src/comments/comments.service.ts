@@ -12,7 +12,7 @@ export class CommentsService {
   constructor(private readonly database: DatabaseService) {}
 
   async listComments(targetType: $Enums.CommentTargetType, targetId: string) {
-    const comments = await this.database.comment.findMany({
+    const comments = await this.database.prisma.comment.findMany({
       where: { targetType, targetId, reported: false },
       include: {
         user: { select: { id: true, username: true, avatar: true } },
@@ -33,7 +33,7 @@ export class CommentsService {
   }
 
   async createComment(userId: string, dto: CreateCommentDto) {
-    const comment = await this.database.comment.create({
+    const comment = await this.database.prisma.comment.create({
       data: {
         userId,
         targetType: dto.targetType,
@@ -57,7 +57,7 @@ export class CommentsService {
   }
 
   async deleteComment(userId: string, id: string, isAdmin = false) {
-    const comment = await this.database.comment.findUnique({ where: { id } });
+    const comment = await this.database.prisma.comment.findUnique({ where: { id } });
     if (!comment) {
       throw new NotFoundException('Comment not found');
     }
@@ -65,17 +65,17 @@ export class CommentsService {
       throw new ForbiddenException('Cannot delete this comment');
     }
 
-    await this.database.comment.delete({ where: { id } });
+    await this.database.prisma.comment.delete({ where: { id } });
     return { deleted: true };
   }
 
   async flagComment(id: string) {
-    const comment = await this.database.comment.findUnique({ where: { id } });
+    const comment = await this.database.prisma.comment.findUnique({ where: { id } });
     if (!comment) {
       throw new NotFoundException('Comment not found');
     }
 
-    await this.database.comment.update({
+    await this.database.prisma.comment.update({
       where: { id },
       data: { reported: true },
     });

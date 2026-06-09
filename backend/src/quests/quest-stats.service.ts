@@ -13,7 +13,7 @@ export class QuestStatsService {
 
   async withStats(quest: Quest) {
     const today = this.dates.toUtcDay();
-    const todayLog = await this.database.questLog.findUnique({
+    const todayLog = await this.database.prisma.questLog.findUnique({
       where: { questId_logDate: { questId: quest.id, logDate: today } },
     });
     const todayProgress = todayLog?.currentValue ?? 0;
@@ -24,7 +24,7 @@ export class QuestStatsService {
       today,
     );
 
-    const recentNotes = await this.database.questLog.findMany({
+    const recentNotes = await this.database.prisma.questLog.findMany({
       where: {
         questId: quest.id,
         note: { not: null },
@@ -55,7 +55,7 @@ export class QuestStatsService {
     targetValue: Quest['targetValue'],
     fromDate: Date,
   ) {
-    const logs = await this.database.questLog.findMany({
+    const logs = await this.database.prisma.questLog.findMany({
       where: {
         questId,
         logDate: { lte: fromDate },

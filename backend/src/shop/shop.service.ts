@@ -13,7 +13,7 @@ export class ShopService {
   constructor(private readonly database: DatabaseService) {}
 
   async listItems() {
-    const items = await this.database.item.findMany({
+    const items = await this.database.prisma.item.findMany({
       orderBy: { priceCoins: 'asc' },
     });
 
@@ -40,7 +40,7 @@ export class ShopService {
       await this.ensureGuildMember(ownerId, userId);
     }
 
-    return this.database.inventory.findMany({
+    return this.database.prisma.inventory.findMany({
       where: { ownerId, ownerType: type },
       include: { item: true },
       orderBy: { createdAt: 'desc' },
@@ -48,7 +48,7 @@ export class ShopService {
   }
 
   async purchase(userId: string, dto: PurchaseItemDto) {
-    const item = await this.database.item.findUnique({
+    const item = await this.database.prisma.item.findUnique({
       where: { id: dto.itemId },
     });
     if (!item) {
@@ -65,19 +65,19 @@ export class ShopService {
 
     if (ownerType === $Enums.OwnerType.GUILD) {
       await this.ensureGuildLeader(ownerId, userId);
-      const guild = await this.database.guild.findUnique({
+      const guild = await this.database.prisma.guild.findUnique({
         where: { id: ownerId },
       });
       if (!guild || guild.gems < item.priceGems) {
         throw new BadRequestException('Not enough gems');
       }
 
-      const [inventory] = await this.database.$transaction([
-        this.database.inventory.create({
+      const [inventory] = await this.database.prisma.$transaction([
+        this.database.prisma.inventory.create({
           data: { ownerId, ownerType, itemId: item.id },
           include: { item: true },
         }),
-        this.database.guild.update({
+        this.database.prisma.guild.update({
           where: { id: ownerId },
           data: { gems: { decrement: item.priceGems } },
         }),
@@ -86,17 +86,17 @@ export class ShopService {
       return inventory;
     }
 
-    const user = await this.database.user.findUnique({ where: { id: userId } });
+    const user = await this.database.prisma.user.findUnique({ where: { id: userId } });
     if (!user || user.coins < item.priceCoins) {
       throw new BadRequestException('Not enough coins');
     }
 
-    const [inventory] = await this.database.$transaction([
-      this.database.inventory.create({
+    const [inventory] = await this.database.prisma.$transaction([
+      this.database.prisma.inventory.create({
         data: { ownerId: userId, ownerType, itemId: item.id },
         include: { item: true },
       }),
-      this.database.user.update({
+      this.database.prisma.user.update({
         where: { id: userId },
         data: { coins: { decrement: item.priceCoins } },
       }),
@@ -106,7 +106,7 @@ export class ShopService {
   }
 
   async setActive(userId: string, inventoryId: string, active: boolean) {
-    const entry = await this.database.inventory.findUnique({
+    const entry = await this.database.prisma.inventory.findUnique({
       where: { id: inventoryId },
       include: { item: true },
     });
@@ -123,7 +123,7 @@ export class ShopService {
     }
 
     if (active) {
-      await this.database.inventory.updateMany({
+      await this.database.prisma.inventory.updateMany({
         where: {
           ownerId: entry.ownerId,
           ownerType: entry.ownerType,
@@ -133,7 +133,7 @@ export class ShopService {
       });
     }
 
-    return this.database.inventory.update({
+    return this.database.prisma.inventory.update({
       where: { id: inventoryId },
       data: { active },
       include: { item: true },
@@ -141,7 +141,7 @@ export class ShopService {
   }
 
   private async ensureGuildMember(guildId: string, userId: string) {
-    const member = await this.database.guildMember.findFirst({
+    const member = await this.database.prisma.guildMember.findFirst({
       where: { guildId, userId },
     });
     if (!member) {
@@ -150,7 +150,7 @@ export class ShopService {
   }
 
   private async ensureGuildLeader(guildId: string, userId: string) {
-    const member = await this.database.guildMember.findFirst({
+    const member = await this.database.prisma.guildMember.findFirst({
       where: { guildId, userId },
     });
     if (!member || member.role !== $Enums.GuildMemberRole.LEADER) {

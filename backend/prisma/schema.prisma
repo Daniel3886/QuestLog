@@ -3,39 +3,40 @@ generator client {
 }
 
 datasource db {
-  provider  = "postgresql"
-  url       = env("DATABASE_URL")
-  directUrl = env("DIRECT_URL")
+  provider = "postgresql"
 }
 
 model User {
-  id               String   @id @default(uuid())
-  email            String   @unique
-  username         String   @unique
-  password         String
-  bio              String?
-  avatar           String   @default("🧙")
-  isBanned         Boolean  @default(false) @map("is_banned")
-  coins            Int      @default(0)
+  id              String    @id @default(uuid())
+  email           String    @unique
+  username        String    @unique
+  password        String
+  bio             String?
+  avatar          String    @default("🧙")
+  isBanned        Boolean   @default(false) @map("is_banned")
+  bannedReason    String?   @map("banned_reason")
+  bannedAt        DateTime? @map("banned_at")
+  coins           Int       @default(0)
   /// Total lifetime XP (level is derived: floor(xp/100), min 1).
-  xp               Int      @default(0)
-  level            Int      @default(1)
-  streak           Int      @default(0)
-  weekStreak       Int      @default(0) @map("week_streak")
-  activeDays       Int      @default(0) @map("active_days")
-  questsCompleted  Int      @default(0) @map("quests_completed")
-  createdAt        DateTime @default(now()) @map("created_at")
-  updatedAt        DateTime @updatedAt @map("updated_at")
+  xp              Int       @default(0)
+  level           Int       @default(1)
+  streak          Int       @default(0)
+  weekStreak      Int       @default(0) @map("week_streak")
+  activeDays      Int       @default(0) @map("active_days")
+  questsCompleted Int       @default(0) @map("quests_completed")
+  createdAt       DateTime  @default(now()) @map("created_at")
+  updatedAt       DateTime  @updatedAt @map("updated_at")
 
-  quests           Quest[]           @relation("QuestCreator")
-  questLogs        QuestLog[]        @relation("QuestLogger")
+  quests           Quest[]         @relation("QuestCreator")
+  questLogs        QuestLog[]      @relation("QuestLogger")
   personalQuests   PersonalQuest[]
   guildMemberships GuildMember[]
   participations   Participation[]
   comments         Comment[]
   reports          Report[]
-  friendsInitiated Friend[]          @relation("FriendInitiator")
-  friendsReceived  Friend[]          @relation("FriendReceiver")
+  bugReports       BugReport[]
+  friendsInitiated Friend[]        @relation("FriendInitiator")
+  friendsReceived  Friend[]        @relation("FriendReceiver")
 
   @@map("users")
 }
@@ -235,6 +236,18 @@ model Report {
 
   @@index([reportedType, reportedId])
   @@map("reports")
+}
+
+model BugReport {
+  id          String   @id @default(uuid())
+  userId      String
+  description String   @db.Text
+  status      String   @default("new")
+  answer      String?  @db.Text
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
 model Admin {

@@ -30,10 +30,10 @@ export default function SiteHeader() {
         </Link>
 
         <nav className="pixel-nav" aria-label="Main navigation">
-          <Link href="/lobby">🏠 LOBBY</Link>
-          <Link href="/tavern">🍺 TAVERN</Link>
-          <Link href="/guilds">⚔️ GUILDS</Link>
-          <Link href="/leaderboards">🏆 RANK</Link>
+          <Link href="/lobby">🏠 <span>LOBBY</span></Link>
+          <Link href="/tavern">🍺 <span>TAVERN</span></Link>
+          <Link href="/guilds">⚔️ <span>GUILDS</span></Link>
+          <Link href="/leaderboards">🏆 <span>RANK</span></Link>
         </nav>
 
         <div className="pixel-actions">

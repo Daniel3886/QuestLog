@@ -7,7 +7,7 @@ export class AdminService {
 
   async isAdmin(email: string): Promise<boolean> {
     if (!email) return false;
-    const admin = await this.database.admin.findUnique({
+    const admin = await this.database.prisma.admin.findUnique({
       where: { email },
     });
     return !!admin;

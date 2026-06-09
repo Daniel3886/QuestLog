@@ -918,7 +918,9 @@ body {
     gap: 1rem;
   }
   .pixel-nav {
-    display: none; /* optional: add mobile menu later */
+    span {
+      display: none; /* hide text, keep icons */
+    }
   }
   .pixel-logo {
     font-size: 1.2rem;

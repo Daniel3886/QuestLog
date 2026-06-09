@@ -21,7 +21,7 @@ export class QuestProgressService {
     const logDate = this.dates.toUtcDay(dto.date);
     const currentValue = dto.currentValue;
 
-    const existing = await this.database.questLog.findUnique({
+    const existing = await this.database.prisma.questLog.findUnique({
       where: { questId_logDate: { questId: quest.id, logDate } },
     });
     const wasComplete =
@@ -42,7 +42,7 @@ export class QuestProgressService {
       note: dto.note,
       proofUrl: dto.proofUrl,
     };
-    const log = await this.database.questLog.upsert({
+    const log = await this.database.prisma.questLog.upsert({
       where: { questId_logDate: { questId: quest.id, logDate } },
       create,
       update,
@@ -61,7 +61,7 @@ export class QuestProgressService {
     quest: Pick<Quest, 'id' | 'targetValue'>,
   ) {
     const logDate = this.dates.toUtcDay();
-    const log = await this.database.questLog.upsert({
+    const log = await this.database.prisma.questLog.upsert({
       where: { questId_logDate: { questId: quest.id, logDate } },
       create: {
         userId,

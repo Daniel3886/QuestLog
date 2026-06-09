@@ -1,0 +1,110 @@
+// AdminPanel.scss
+.admin-panel {
+  padding: 1rem;
+  .tabs {
+    display: flex;
+    gap: 0.5rem;
+    border-bottom: 2px solid var(--pixel-border);
+    margin-bottom: 1rem;
+    .tab {
+      background: none;
+      border: none;
+      font-family: inherit;
+      font-size: 1rem;
+      padding: 0.5rem 1rem;
+      cursor: pointer;
+      color: var(--pixel-text-dim);
+      &.active {
+        color: var(--pixel-primary);
+        border-bottom: 2px solid var(--pixel-primary);
+      }
+    }
+  }
+  .admin-section {
+    .section-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 1rem;
+    }
+    .report-item, .event-item, .bug-report-item, .banned-item {
+      margin-bottom: 1rem;
+      padding: 1rem;
+      .report-meta, .bug-header {
+        display: flex;
+        gap: 1rem;
+        font-size: 0.8rem;
+        color: var(--pixel-text-dim);
+        margin-bottom: 0.5rem;
+      }
+      .report-actions, .event-actions {
+        margin-top: 0.5rem;
+      }
+    }
+    .event-form {
+      padding: 1rem;
+      margin-bottom: 1rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+      input, textarea, select {
+        width: 100%;
+      }
+      .form-actions {
+        display: flex;
+        gap: 0.5rem;
+        justify-content: flex-end;
+      }
+    }
+    .events-list .event-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      .event-header {
+        display: flex;
+        gap: 0.5rem;
+        align-items: center;
+      }
+    }
+    .bug-report-item {
+      .bug-actions {
+        margin-top: 0.5rem;
+        display: flex;
+        gap: 0.5rem;
+        align-items: flex-start;
+        select, textarea {
+          flex: 1;
+        }
+      }
+    }
+  }
+}
+
+// Additional styles for bug report modal (reuse existing modal styles)
+.modal--large {
+  max-width: 800px;
+  width: 90%;
+}
+.bug-report-form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin-bottom: 1.5rem;
+}
+.bug-report-list {
+  max-height: 400px;
+  overflow-y: auto;
+  .bug-report-item {
+    margin-bottom: 0.75rem;
+    padding: 0.75rem;
+  }
+}
+.bug-status {
+  padding: 0.2rem 0.5rem;
+  border-radius: 0;
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  &[data-status="new"] { background: var(--pixel-primary); color: white; }
+  &[data-status="in_progress"] { background: var(--pixel-gold); color: black; }
+  &[data-status="completed"] { background: var(--pixel-success); color: black; }
+}

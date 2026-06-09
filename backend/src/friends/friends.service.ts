@@ -11,7 +11,7 @@ export class FriendsService {
   constructor(private readonly database: DatabaseService) {}
 
   async listFriends(userId: string) {
-    const friendships = await this.database.friend.findMany({
+    const friendships = await this.database.prisma.friend.findMany({
       where: {
         OR: [
           { userId, status: $Enums.FriendStatus.ACCEPTED },
@@ -38,7 +38,7 @@ export class FriendsService {
   }
 
   async listPending(userId: string) {
-  const pending = await this.database.friend.findMany({
+  const pending = await this.database.prisma.friend.findMany({
     where: { friendId: userId, status: 'PENDING' },
     include: { user: { select: { id: true, username: true, avatar: true } } },
   });
@@ -52,7 +52,7 @@ export class FriendsService {
 }
 
   async sendRequest(userId: string, friendEmail: string) {
-    const target = await this.database.user.findUnique({
+    const target = await this.database.prisma.user.findUnique({
       where: { email: friendEmail },
     });
     if (!target) {
@@ -64,7 +64,7 @@ export class FriendsService {
 
     const friendId = target.id;
 
-    const existing = await this.database.friend.findFirst({
+    const existing = await this.database.prisma.friend.findFirst({
       where: {
         OR: [
           { userId, friendId },
@@ -76,7 +76,7 @@ export class FriendsService {
       throw new BadRequestException('Friend request already exists');
     }
 
-    return this.database.friend.create({
+    return this.database.prisma.friend.create({
       data: { userId, friendId },
       include: {
         friend: { select: { id: true, username: true } },
@@ -85,21 +85,21 @@ export class FriendsService {
   }
 
   async acceptRequest(userId: string, requestId: string) {
-    const request = await this.database.friend.findFirst({
+    const request = await this.database.prisma.friend.findFirst({
       where: { id: requestId, friendId: userId, status: $Enums.FriendStatus.PENDING },
     });
     if (!request) {
       throw new NotFoundException('Friend request not found');
     }
 
-    return this.database.friend.update({
+    return this.database.prisma.friend.update({
       where: { id: requestId },
       data: { status: $Enums.FriendStatus.ACCEPTED },
     });
   }
 
   async removeFriend(userId: string, friendshipId: string) {
-    const friendship = await this.database.friend.findFirst({
+    const friendship = await this.database.prisma.friend.findFirst({
       where: {
         id: friendshipId,
         OR: [{ userId }, { friendId: userId }],
@@ -109,7 +109,7 @@ export class FriendsService {
       throw new NotFoundException('Friendship not found');
     }
 
-    await this.database.friend.delete({ where: { id: friendshipId } });
+    await this.database.prisma.friend.delete({ where: { id: friendshipId } });
     return { removed: true };
   }
 }

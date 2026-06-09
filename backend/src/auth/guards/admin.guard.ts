@@ -1,13 +1,19 @@
-import { CanActivate, ExecutionContext, Injectable } from '@nestjs/common';
-import { Observable } from 'rxjs';
+import { Injectable, CanActivate, ExecutionContext, ForbiddenException } from '@nestjs/common';
+import { DatabaseService } from '../../database/database.service';
 
 @Injectable()
 export class AdminGuard implements CanActivate {
-  canActivate(
-    context: ExecutionContext,
-  ): boolean | Promise<boolean> | Observable<boolean> {
+  constructor(private database: DatabaseService) {}
+
+  async canActivate(context: ExecutionContext): Promise<boolean> {
     const request = context.switchToHttp().getRequest();
-    const user = request.user;
-    return !!user?.isAdmin;
+    const user = request.user; // from JwtAuthGuard
+    if (!user || !user.email) return false;
+
+    const admin = await this.database.prisma.admin.findUnique({
+      where: { email: user.email },
+    });
+    if (!admin) throw new ForbiddenException('Admin access required');
+    return true;
   }
 }

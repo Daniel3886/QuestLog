@@ -20,6 +20,7 @@ export interface UserProfile {
   questsCompleted?: number;
   completedToday: number;
   dailyQuestCount: number;
+  isAdmin?: boolean;
 }
 
 export interface LobbyQuest {

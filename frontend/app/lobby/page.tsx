@@ -8,6 +8,7 @@ import type { FriendRequest, FriendSummary, LobbyQuest, UserProfile } from '@/li
 import ErrorBanner from '@/components/ErrorBanner';
 import './lobby.scss';
 import ThemeSwitcher from '@/components/ThemeSwitcher';
+import AdminPanel from '@/components/AdminPanel';
 
 const availableIcons = ['🏃', '📚', '🧘', '💪', '🗣️', '🎨', '🎸', '🍳', '💧', '🌟'];
 
@@ -193,7 +194,8 @@ export default function LobbyPage() {
 
   return (
     <div className="lobby">
-        <ThemeSwitcher />
+      {user?.isAdmin && <AdminPanel />}
+      <ThemeSwitcher />
       <div className="lobby__particles"></div>
       <ErrorBanner message={error} onDismiss={() => setError('')} />
 

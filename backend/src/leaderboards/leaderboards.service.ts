@@ -11,7 +11,7 @@ export class LeaderboardsService {
   constructor(private readonly database: DatabaseService) {}
 
   async getUserLeaderboard(metric: UserMetric = 'streak', limit = 50) {
-    const users = await this.database.user.findMany({
+    const users = await this.database.prisma.user.findMany({
       select: {
         id: true,
         username: true,
@@ -46,7 +46,7 @@ export class LeaderboardsService {
   }
 
   async getGuildLeaderboard(metric: GuildMetric = 'level', limit = 50) {
-    const guilds = await this.database.guild.findMany({
+    const guilds = await this.database.prisma.guild.findMany({
       include: {
         _count: {
           select: {
@@ -85,7 +85,7 @@ export class LeaderboardsService {
       return entry;
     }
 
-    const user = await this.database.user.findUnique({
+    const user = await this.database.prisma.user.findUnique({
       where: { id: userId },
       select: {
         id: true,

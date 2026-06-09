@@ -16,7 +16,7 @@ export class UserProgressService {
 
   /** Personal lobby quests: track streaks only, no XP or coins. */
   async onPersonalQuestCompleted(userId: string) {
-    await this.database.user.update({
+    await this.database.prisma.user.update({
       where: { id: userId },
       data: {
         questsCompleted: { increment: 1 },
@@ -54,7 +54,7 @@ export class UserProgressService {
     coinGain: number,
     options: { incrementQuestsCompleted: boolean },
   ) {
-    const user = await this.database.user.findUnique({ where: { id: userId } });
+    const user = await this.database.prisma.user.findUnique({ where: { id: userId } });
     if (!user) {
       return;
     }
@@ -62,7 +62,7 @@ export class UserProgressService {
     const totalXp = addUserTotalXp(user.xp, xpGain);
     const { level } = deriveUserLevel(totalXp);
 
-    await this.database.user.update({
+    await this.database.prisma.user.update({
       where: { id: userId },
       data: {
         xp: totalXp,
@@ -79,7 +79,7 @@ export class UserProgressService {
     const today = this.dates.toUtcDay();
     const weekStart = this.dates.addDays(today, -6);
 
-    const logs = await this.database.questLog.findMany({
+    const logs = await this.database.prisma.questLog.findMany({
       where: {
         userId,
         logDate: { gte: weekStart, lte: today },
@@ -95,7 +95,7 @@ export class UserProgressService {
       }
     }
 
-    await this.database.user.update({
+    await this.database.prisma.user.update({
       where: { id: userId },
       data: {
         weekStreak: activeDays.size,

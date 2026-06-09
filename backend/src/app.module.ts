@@ -10,6 +10,8 @@ import { FriendsModule } from './friends/friends.module';
 import { ShopModule } from './shop/shop.module';
 import { ReportsModule } from './reports/reports.module';
 import { LeaderboardsModule } from './leaderboards/leaderboards.module';
+import { BugReportsModule } from './bug-reports/bug-reports.module';
+import { AdminModule } from './admin/admin.module';
 
 @Module({
   imports: [
@@ -24,6 +26,8 @@ import { LeaderboardsModule } from './leaderboards/leaderboards.module';
     ShopModule,
     ReportsModule,
     LeaderboardsModule,
+    AdminModule,
+    BugReportsModule,
   ],
 })
 export class AppModule {}

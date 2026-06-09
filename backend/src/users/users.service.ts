@@ -23,31 +23,35 @@ export class UserService {
     const resolvedUsername =
       username?.trim() || (await this.generateUsername(email));
 
-    return this.database.user.create({
+    return this.database.prisma.user.create({
       data: { email, password: hashed, username: resolvedUsername },
     });
   }
 
   findByEmail(email: User['email']) {
-    return this.database.user.findUnique({ where: { email } });
+    return this.database.prisma.user.findUnique({ where: { email } });
   }
 
   findById(id: User['id']) {
-    return this.database.user.findUnique({ where: { id } });
+    return this.database.prisma.user.findUnique({ where: { id } });
   }
 
   async getProfile(userId: string) {
-    const user = await this.database.user.findUnique({ where: { id: userId } });
+    const user = await this.database.prisma.user.findUnique({ where: { id: userId } });
     if (!user) {
       throw new NotFoundException('User not found');
     }
 
+    const admin = await this.database.prisma.admin.findUnique({
+      where: { email: user.email },
+    });
+    const isAdmin = !!admin;
     const today = this.dates.toUtcDay();
-    const personalQuests = await this.database.quest.count({
+    const personalQuests = await this.database.prisma.quest.count({
       where: { creatorId: userId, type: $Enums.QuestType.PERSONAL },
     });
 
-    const todayLogs = await this.database.questLog.findMany({
+    const todayLogs = await this.database.prisma.questLog.findMany({
       where: {
         userId,
         logDate: today,
@@ -60,7 +64,7 @@ export class UserService {
       (log) => log.currentValue >= log.quest.targetValue,
     ).length;
 
-    const dailyQuestCount = await this.database.quest.count({
+    const dailyQuestCount = await this.database.prisma.quest.count({
       where: {
         creatorId: userId,
         type: $Enums.QuestType.PERSONAL,
@@ -87,12 +91,13 @@ export class UserService {
       questsCompleted: user.questsCompleted,
       completedToday,
       dailyQuestCount,
+      isAdmin, 
     };
   }
 
   async updateProfile(userId: string, dto: UpdateProfileDto) {
     if (dto.username) {
-      const taken = await this.database.user.findFirst({
+      const taken = await this.database.prisma.user.findFirst({
         where: { username: dto.username, id: { not: userId } },
       });
       if (taken) {
@@ -100,7 +105,7 @@ export class UserService {
       }
     }
 
-    const user = await this.database.user.update({
+    const user = await this.database.prisma.user.update({
       where: { id: userId },
       data: {
         username: dto.username,
@@ -113,7 +118,7 @@ export class UserService {
   }
 
   async setUserBan(userId: string, banned: boolean) {
-    await this.database.user.update({
+    await this.database.prisma.user.update({
       where: { id: userId },
       data: { isBanned: banned },
     });
@@ -135,7 +140,7 @@ export class UserService {
     let username = base;
     let suffix = 0;
 
-    while (await this.database.user.findUnique({ where: { username } })) {
+    while (await this.database.prisma.user.findUnique({ where: { username } })) {
       suffix += 1;
       username = `${base}${suffix}`.slice(0, 30);
     }

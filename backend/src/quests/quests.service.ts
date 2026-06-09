@@ -42,13 +42,13 @@ export class QuestsService {
       proofRequired: dto.proofRequired,
       frequency: dto.frequency,
     };
-    const quest = await this.database.quest.create({ data });
+    const quest = await this.database.prisma.quest.create({ data });
 
     return this.stats.withStats(quest);
   }
 
   async listQuests(creatorId: Quest['creatorId']) {
-    const quests = await this.database.quest.findMany({
+    const quests = await this.database.prisma.quest.findMany({
       where: { creatorId, type: $Enums.QuestType.PERSONAL },
       orderBy: { createdAt: 'desc' },
     });
@@ -81,7 +81,7 @@ export class QuestsService {
       proofRequired: dto.proofRequired,
       frequency: dto.frequency,
     };
-    const quest = await this.database.quest.update({
+    const quest = await this.database.prisma.quest.update({
       where: { id },
       data,
     });
@@ -115,7 +115,7 @@ export class QuestsService {
 
   async deleteQuest(creatorId: Quest['creatorId'], id: Quest['id']) {
     await this.getOwnedQuestById(creatorId, id);
-    await this.database.quest.delete({ where: { id } });
+    await this.database.prisma.quest.delete({ where: { id } });
 
     return { deleted: true };
   }
@@ -124,7 +124,7 @@ export class QuestsService {
     category?: $Enums.QuestCategory,
     sort: 'popular' | 'newest' | 'difficulty' = 'popular',
   ) {
-    const quests = await this.database.quest.findMany({
+    const quests = await this.database.prisma.quest.findMany({
       where: {
         type: $Enums.QuestType.PUBLIC,
         ...(category ? { category } : {}),
@@ -196,7 +196,7 @@ export class QuestsService {
     ? proofMap[dto.proofRequired]
     : 'NONE';
 
-  const quest = await this.database.quest.create({
+  const quest = await this.database.prisma.quest.create({
     data: {
       creatorId,
       type: $Enums.QuestType.PUBLIC,
@@ -220,7 +220,7 @@ export class QuestsService {
 }
 
   async joinPublicQuest(userId: string, questId: string) {
-    const quest = await this.database.quest.findFirst({
+    const quest = await this.database.prisma.quest.findFirst({
       where: { id: questId, type: $Enums.QuestType.PUBLIC },
     });
     if (!quest) {
@@ -232,7 +232,7 @@ export class QuestsService {
       );
     }
 
-    const enrollment = await this.database.personalQuest.upsert({
+    const enrollment = await this.database.prisma.personalQuest.upsert({
       where: { userId_questId: { userId, questId } },
       create: { userId, questId },
       update: {},
@@ -246,7 +246,7 @@ export class QuestsService {
   questId: string,
   dto: UpdateQuestProgressDto,
 ) {
-  const quest = await this.database.quest.findFirst({
+  const quest = await this.database.prisma.quest.findFirst({
     where: { id: questId, type: $Enums.QuestType.PUBLIC },
   });
   if (!quest) {
@@ -258,7 +258,7 @@ export class QuestsService {
     );
   }
 
-  const enrollment = await this.database.personalQuest.findUnique({
+  const enrollment = await this.database.prisma.personalQuest.findUnique({
     where: { userId_questId: { userId, questId } },
   });
   if (!enrollment) {
@@ -273,7 +273,7 @@ export class QuestsService {
   const isComplete = currentValue >= quest.targetValue;
 
   // Update personalQuest
-  const updated = await this.database.personalQuest.update({
+  const updated = await this.database.prisma.personalQuest.update({
     where: { id: enrollment.id },
     data: {
       currentValue,
@@ -284,7 +284,7 @@ export class QuestsService {
   });
 
   // 🆕 Create a quest log entry
-  await this.database.questLog.create({
+  await this.database.prisma.questLog.create({
     data: {
       userId,
       questId,
@@ -304,12 +304,12 @@ export class QuestsService {
     isComplete,
     quest: formatPublicQuest({
       ...quest,
-      creator: await this.database.user.findUniqueOrThrow({
+      creator: await this.database.prisma.user.findUniqueOrThrow({
         where: { id: quest.creatorId },
         select: { username: true, avatar: true },
       }),
       _count: {
-        personalQuests: await this.database.personalQuest.count({
+        personalQuests: await this.database.prisma.personalQuest.count({
           where: { questId },
         }),
       },
@@ -321,7 +321,7 @@ export class QuestsService {
     const dayStart = this.dates.toUtcDay();
     const dayEnd = this.dates.addDays(dayStart, 1);
 
-    const createdToday = await this.database.quest.count({
+    const createdToday = await this.database.prisma.quest.count({
       where: {
         creatorId,
         type: $Enums.QuestType.PUBLIC,
@@ -340,7 +340,7 @@ export class QuestsService {
     creatorId: Quest['creatorId'],
     id: Quest['id'],
   ) {
-    const quest = await this.database.quest.findFirst({
+    const quest = await this.database.prisma.quest.findFirst({
       where: { id, creatorId, type: $Enums.QuestType.PERSONAL },
     });
 
