@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException, ForbiddenException } from '@nestjs/common';
+import { Injectable, NotFoundException, ForbiddenException, BadRequestException } from '@nestjs/common';
 import { DatabaseService } from '../database/database.service';
 import { BanUserDto } from './dto/ban-user.dto';
 import { UpdateBugReportDto } from './dto/update-bug-report.dto';
@@ -15,48 +15,76 @@ export class AdminService {
 
   // ========== Reports ==========
   async getReports() {
-  const reports = await this.database.prisma.report.findMany({
-    include: {
-      user: { select: { id: true, username: true, avatar: true } },
-    },
-    orderBy: { createdAt: 'desc' },
-  });
+    const reports = await this.database.prisma.report.findMany({
+      include: { user: { select: { id: true, username: true } } },
+      orderBy: { createdAt: 'desc' },
+    });
 
-  // For each report, fetch the reported entity
-  const enriched = await Promise.all(
-    reports.map(async (report) => {
+    const enriched = await Promise.all(reports.map(async (report) => {
       let content = '';
       let creatorName = '';
+      let creatorId = '';
+      let questDescription = '';
+
       if (report.reportedType === 'QUEST') {
         const quest = await this.database.prisma.quest.findUnique({
           where: { id: report.reportedId },
-          include: { creator: { select: { username: true } } },
+          include: { creator: { select: { id: true, username: true } } },
         });
         content = quest?.title || 'Deleted quest';
+        questDescription = quest?.description || '';
         creatorName = quest?.creator?.username || 'Unknown';
+        creatorId = quest?.creator?.id || '';
       } else if (report.reportedType === 'COMMENT') {
         const comment = await this.database.prisma.comment.findUnique({
           where: { id: report.reportedId },
-          include: { user: { select: { username: true } } },
+          include: { user: { select: { id: true, username: true } } },
         });
         content = comment?.content || 'Deleted comment';
         creatorName = comment?.user?.username || 'Unknown';
+        creatorId = comment?.user?.id || '';
       }
+
       return {
         id: report.id,
         type: report.reportedType.toLowerCase(),
-        content,                     // the actual reported text/title
+        content,
+        questDescription, // new field
         creatorName,
-        userId: report.user.id,
-        userName: report.user.username,
+        creatorId,
         reportedAt: report.createdAt,
-        reason: report.content,      // the report reason
+        reason: report.content,
+        reporterId: report.userId,
+        reporterName: report.user.username,
       };
-    }),
-  );
+    }));
 
-  return enriched;
-}
+    return enriched;
+  }
+  
+  async deleteReport(reportId: string) {
+    await this.database.prisma.report.delete({ where: { id: reportId } });
+    return { success: true };
+  }
+
+  async deleteQuest(reportId: string) {
+    const report = await this.database.prisma.report.findUnique({ where: { id: reportId } });
+    if (!report) {
+      throw new NotFoundException(`Report with ID ${reportId} not found`);
+    }
+    if (report.reportedType !== 'QUEST') {
+      throw new BadRequestException('This report does not correspond to a quest');
+    }
+    const questId = report.reportedId;
+    const quest = await this.database.prisma.quest.findUnique({ where: { id: questId } });
+    if (!quest) {
+      throw new NotFoundException(`Quest with ID ${questId} not found`);
+    }
+    await this.database.prisma.quest.delete({ where: { id: questId } });
+    // Also delete the report itself
+    await this.database.prisma.report.delete({ where: { id: reportId } });
+    return { success: true };
+  }
 
   // ========== User Ban ==========
   async banUser(adminId: string, userId: string, dto: BanUserDto) {

@@ -177,6 +177,10 @@ export const commentsApi = {
       method: 'PATCH',
       body: JSON.stringify({ content }),
     }),
+  adminDelete: (reportId: string) =>
+    apiFetch(`/comments/${reportId}/admin`, { method: 'DELETE' }),
+  adminRestore: (reportId: string) =>
+    apiFetch(`/comments/${reportId}/restore`, { method: 'PATCH' }),
 };
 
 export const friendsApi = {
@@ -239,4 +243,11 @@ export const leaderboardsApi = {
     }),
   myRank: (metric = 'streak') =>
     apiFetch<RankedUser | null>(`/leaderboards/users/me?metric=${metric}`),
+};
+
+export const adminApi = {
+  deleteReport: (reportId: string) =>
+    apiFetch(`/admin/reports/${reportId}`, { method: 'DELETE' }),
+  deleteQuest: (reportId: string) =>
+    apiFetch(`/admin/quests/${reportId}`, { method: 'DELETE' }),
 };

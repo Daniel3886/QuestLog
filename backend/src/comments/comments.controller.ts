@@ -15,6 +15,7 @@ import { User } from 'src/auth/decorators/user.decorator';
 import type { AuthUser } from 'src/auth/types/auth-user.type';
 import { CreateCommentDto } from './dto/create-comment.dto';
 import { CommentsService } from './comments.service';
+import { AdminGuard } from 'src/auth/guards/admin.guard';
 //import { mockComments } from '../mock-data';
 
 @Controller('comments')
@@ -28,12 +29,6 @@ export class CommentsController {
   ) {
     return this.commentsService.listComments(targetType, targetId);
   }
-
-  // @Get()
-  // async listComments(@Query('targetType') targetType: string, @Query('targetId') targetId: string) {
-  //   // Return mock comments for any target
-  //   return mockComments;
-  // }
 
   @UseGuards(JwtAuthGuard)
   @Post()
@@ -49,7 +44,24 @@ export class CommentsController {
 
   @UseGuards(JwtAuthGuard)
   @Patch(':id/report')
-  flagComment(@Param('id') id: string) {
-    return this.commentsService.flagComment(id);
+  @UseGuards(JwtAuthGuard)
+  async reportComment(
+    @User() user: AuthUser,
+    @Param('id') id: string,
+    @Body('content') content?: string,
+  ) {
+    return this.commentsService.reportComment(user.id, id, content);
+  }
+
+  @Delete(':id/admin')
+  @UseGuards(JwtAuthGuard, AdminGuard)
+  async adminDeleteComment(@Param('id') reportId: string) {
+    return this.commentsService.adminDeleteComment(reportId);
+  }
+
+  @Patch(':id/restore')
+  @UseGuards(JwtAuthGuard, AdminGuard)
+  async adminRestoreComment(@Param('id') reportId: string) {
+    return this.commentsService.restoreComment(reportId);
   }
 }

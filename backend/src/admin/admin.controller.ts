@@ -29,6 +29,16 @@ export class AdminController {
     return this.adminService.getReports();
   }
 
+  @Delete('reports/:id')
+  async deleteReport(@Param('id') reportId: string) {
+    return this.adminService.deleteReport(reportId);
+  }
+
+  @Delete('quests/:id')
+  async deleteQuest(@Param('id') id: string) {
+    return this.adminService.deleteQuest(id);
+  }
+
   // User Ban
   @Post('users/:userId/ban')
   banUser(@User() admin: AuthUser, @Param('userId') userId: string, @Body() dto: BanUserDto) {

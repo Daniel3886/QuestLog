@@ -1,23 +1,25 @@
-// components/AdminPanel.tsx
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { apiFetch } from '@/lib/api';
+import { adminApi, commentsApi, apiFetch } from '@/lib/api';
 import ErrorBanner from '@/components/ErrorBanner';
 import './AdminPanel.scss';
 import EventManager from './EventManager';
-
 
 type ReportItem = {
   id: string;
   type: 'comment' | 'quest';
   content: string;
-  userId: string;
-  userName: string;
+  questDescription?: string;
+  creatorName: string;
+  creatorId: string;
   reportedAt: string;
+  reason: string;
+  reporterId: string;
+  reporterName: string;
 };
 
-export type EventItem = {
+type EventItem = {
   id: string;
   title: string;
   description: string;
@@ -43,11 +45,10 @@ type BugReport = {
 };
 
 type BannedUser = {
-  userId: string;
+  id: string;
   userName: string;
   bannedAt: string;
   reason: string;
-  reportedItemId?: string;
 };
 
 export default function AdminPanel() {
@@ -59,7 +60,6 @@ export default function AdminPanel() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
-  // --- Report handling ---
   const loadReports = async () => {
     setLoading(true);
     try {
@@ -78,10 +78,50 @@ export default function AdminPanel() {
         method: 'POST',
         body: JSON.stringify({ reason, reportedItemId }),
       });
-      // Refresh reports list (the reported item might disappear)
-      await loadReports();
+      await loadReports(); // refresh reports
     } catch (err: any) {
       setError(err.message || 'Failed to ban user');
+    }
+  };
+
+  const deleteReport = async (reportId: string) => {
+    try {
+      await adminApi.deleteReport(reportId);
+      setReports(prev => prev.filter(r => r.id !== reportId));
+    } catch (err: any) {
+      setError(err.message || 'Failed to delete report');
+    }
+  };
+
+  const deleteQuest = async (reportId: string) => {
+    try {
+      await adminApi.deleteQuest(reportId);
+      // Remove the report as well
+      await adminApi.deleteReport(reportId);
+      setReports(prev => prev.filter(r => r.id !== reportId));
+    } catch (err: any) {
+      setError(err.message || 'Failed to delete quest');
+    }
+  };
+
+  const deleteComment = async (reportId: string) => {
+    try {
+      await commentsApi.adminDelete(reportId);
+      await adminApi.deleteReport(reportId);
+      setReports(prev => prev.filter(r => r.id !== reportId));
+    } catch (err: any) {
+      setError(err.message || 'Failed to delete comment');
+    }
+  };
+
+  const restoreComment = async (reportId: string) => {
+    try {
+      await commentsApi.adminRestore(reportId);
+      // Remove the report entry
+      await adminApi.deleteReport(reportId);
+      setReports(prev => prev.filter(r => r.id !== reportId));
+    } catch (err: any) {
+      setError(err.message || 'Failed to restore comment');
     }
   };
 
@@ -159,10 +199,15 @@ export default function AdminPanel() {
 
   // --- Banned users ---
   const loadBannedUsers = async () => {
-    setLoading(true);
+  setLoading(true);
     try {
-      const data = await apiFetch<BannedUser[]>('/admin/banned-users');
-      setBannedUsers(data);
+      const data = await apiFetch<{ id: string; username: string; bannedReason: string; bannedAt: string }[]>('/admin/banned-users');
+      setBannedUsers(data.map(user => ({
+        id: user.id,
+        userName: user.username,
+        reason: user.bannedReason,
+        bannedAt: user.bannedAt,
+      })));
     } catch (err: any) {
       setError(err.message || 'Failed to load banned users');
     } finally {
@@ -173,7 +218,7 @@ export default function AdminPanel() {
   const unbanUser = async (userId: string) => {
     try {
       await apiFetch(`/admin/users/${userId}/unban`, { method: 'POST' });
-      setBannedUsers(prev => prev.filter(u => u.userId !== userId));
+      setBannedUsers(prev => prev.filter(u => u.id !== userId));
     } catch (err: any) {
       setError(err.message || 'Failed to unban user');
     }
@@ -195,20 +240,34 @@ export default function AdminPanel() {
         <div key={report.id} className="report-item pixel-card">
           <div className="report-meta">
             <span className="report-type">{report.type}</span>
-            <span className="report-user">by {report.userName}</span>
+            <span>Reported item by <strong>{report.creatorName}</strong></span>
+            <span>Reported by {report.reporterName}</span>
             <span className="report-date">{new Date(report.reportedAt).toLocaleString()}</span>
           </div>
-          <div className="report-content">{report.content}</div>
+          <div className="report-content">
+            <strong>Content:</strong> {report.content}
+            {report.questDescription && (
+              <>
+                <br /><strong>Description:</strong> {report.questDescription}
+              </>
+            )}
+          </div>
+          <div className="report-reason"><strong>Reason:</strong> {report.reason}</div>
           <div className="report-actions">
-            <button
-              className="pixel-btn pixel-btn--small"
-              onClick={() => {
-                const reason = prompt('Reason for ban:');
-                if (reason) banUserWithReason(report.userId, reason, report.id);
-              }}
-            >
-              Ban user
-            </button>
+            <button className="pixel-btn pixel-btn--small" onClick={() => {
+              const reason = prompt('Ban reason:');
+              if (reason) banUserWithReason(report.creatorId, reason, report.id);
+            }}>Ban user</button>
+            <button className="pixel-btn pixel-btn--small" onClick={() => deleteReport(report.id)}>Delete report</button>
+            {report.type === 'quest' && (
+              <button className="pixel-btn pixel-btn--small pixel-btn--secondary" onClick={() => deleteQuest(report.id)}>Remove quest</button>
+            )}
+            {report.type === 'comment' && (
+              <>
+                <button className="pixel-btn pixel-btn--small pixel-btn--secondary" onClick={() => deleteComment(report.id)}>Delete comment</button>
+                <button className="pixel-btn pixel-btn--small pixel-btn--secondary" onClick={() => restoreComment(report.id)}>Restore comment</button>
+              </>
+            )}
           </div>
         </div>
       ))}
@@ -257,12 +316,12 @@ export default function AdminPanel() {
       {loading && <p>Loading...</p>}
       {bannedUsers.length === 0 && !loading && <p>No banned users.</p>}
       {bannedUsers.map(user => (
-        <div key={user.userId} className="banned-item pixel-card">
+        <div key={user.id} className="banned-item pixel-card">
           <div className="banned-info">
             <strong>{user.userName}</strong> – banned on {new Date(user.bannedAt).toLocaleDateString()}
             <br /><small>Reason: {user.reason}</small>
           </div>
-          <button className="pixel-btn pixel-btn--small" onClick={() => unbanUser(user.userId)}>Unban</button>
+          <button className="pixel-btn pixel-btn--small" onClick={() => unbanUser(user.id)}>Unban</button>
         </div>
       ))}
     </div>

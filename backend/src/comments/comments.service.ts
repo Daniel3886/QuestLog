@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   ForbiddenException,
   Injectable,
   NotFoundException,
@@ -69,17 +70,51 @@ export class CommentsService {
     return { deleted: true };
   }
 
-  async flagComment(id: string) {
-    const comment = await this.database.prisma.comment.findUnique({ where: { id } });
+  async adminDeleteComment(reportId: string) {
+  const report = await this.database.prisma.report.findUnique({ where: { id: reportId } });
+  if (!report) throw new NotFoundException(`Report not found`);
+  if (report.reportedType !== 'COMMENT') throw new BadRequestException('Not a comment report');
+  const commentId = report.reportedId;
+  await this.database.prisma.comment.delete({ where: { id: commentId } });
+  await this.database.prisma.report.delete({ where: { id: reportId } });
+  return { success: true };
+}
+
+  async reportComment(userId: string, commentId: string, reason?: string) {
+    const comment = await this.database.prisma.comment.findUnique({
+      where: { id: commentId },
+    });
     if (!comment) {
       throw new NotFoundException('Comment not found');
     }
 
     await this.database.prisma.comment.update({
-      where: { id },
+      where: { id: commentId },
       data: { reported: true },
     });
 
-    return { reported: true };
+    await this.database.prisma.report.create({
+      data: {
+        userId,
+        reportedType: 'COMMENT',
+        reportedId: commentId,
+        content: reason || 'Reported comment',
+      },
+    });
+
+    return { success: true };
+  }
+
+  async restoreComment(reportId: string) {
+    const report = await this.database.prisma.report.findUnique({ where: { id: reportId } });
+    if (!report) throw new NotFoundException(`Report not found`);
+    if (report.reportedType !== 'COMMENT') throw new BadRequestException('Not a comment report');
+    const commentId = report.reportedId;
+    await this.database.prisma.comment.update({
+      where: { id: commentId },
+      data: { reported: false },
+    });
+    await this.database.prisma.report.delete({ where: { id: reportId } });
+    return { success: true };
   }
 }
