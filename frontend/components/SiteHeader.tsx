@@ -33,6 +33,7 @@ export default function SiteHeader() {
           <Link href="/lobby">🏠 <span>LOBBY</span></Link>
           <Link href="/tavern">🍺 <span>TAVERN</span></Link>
           <Link href="/guilds">⚔️ <span>GUILDS</span></Link>
+          <Link href="/shop">🛒 Shop</Link>
           <Link href="/leaderboards">🏆 <span>RANK</span></Link>
         </nav>
 

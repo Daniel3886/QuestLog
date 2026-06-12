@@ -212,6 +212,7 @@ export const reportsApi = {
 
 // Guilds
 export const guildsApi = {
+  getMyGuild: () => apiFetch<Guild>('/guilds/me'),
   me: () => apiFetch<Guild | null>('/guilds/me'),
   create: (body: { name: string; description?: string; avatar?: string }) =>
     apiFetch<Guild>('/guilds', { method: 'POST', body: JSON.stringify(body) }),
@@ -250,4 +251,48 @@ export const adminApi = {
     apiFetch(`/admin/reports/${reportId}`, { method: 'DELETE' }),
   deleteQuest: (reportId: string) =>
     apiFetch(`/admin/quests/${reportId}`, { method: 'DELETE' }),
+};
+
+// Shop
+export type ShopItem = {
+  id: string;
+  name: string;
+  description: string | null;
+  priceCoins: number;
+  priceGems: number;
+  type: string; // 'BADGE', 'AVATAR_FRAME', 'GUILD_DECORATION', etc.
+  icon: string;
+  fileUrl: string | null;
+};
+
+export type InventoryItem = {
+  id: string;
+  itemId: string;
+  name: string;
+  description: string | null;
+  icon: string;
+  active: boolean;
+  type: string;
+  purchasedAt: string;
+};
+
+export const shopApi = {
+  listItems: () => apiFetch<ShopItem[]>('/shop/items', { auth: false }),
+  getInventory: (ownerType?: 'USER' | 'GUILD', guildId?: string) => {
+    const params = new URLSearchParams();
+    if (ownerType) params.set('ownerType', ownerType);
+    if (guildId) params.set('guildId', guildId);
+    const qs = params.toString();
+    return apiFetch<InventoryItem[]>(`/shop/inventory${qs ? `?${qs}` : ''}`);
+  },
+  purchase: (itemId: string, ownerType: 'USER' | 'GUILD', guildId?: string) =>
+    apiFetch('/shop/purchase', {
+      method: 'POST',
+      body: JSON.stringify({ itemId, ownerType, guildId }),
+    }),
+  setActive: (inventoryId: string, active: boolean) =>
+    apiFetch(`/shop/inventory/${inventoryId}/active`, {
+      method: 'PATCH',
+      body: JSON.stringify({ active }),
+    }),
 };
