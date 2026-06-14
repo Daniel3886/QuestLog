@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   ConflictException,
   Injectable,
   NotFoundException,
@@ -96,26 +97,23 @@ export class UserService {
   }
 
   async updateProfile(userId: string, dto: UpdateProfileDto) {
-    if (dto.username) {
-      const taken = await this.database.prisma.user.findFirst({
-        where: { username: dto.username, id: { not: userId } },
-      });
-      if (taken) {
-        throw new ConflictException('Username already taken');
-      }
-    }
-
-    const user = await this.database.prisma.user.update({
-      where: { id: userId },
-      data: {
-        username: dto.username,
-        bio: dto.bio,
-        avatar: dto.avatar,
-      },
+  if (dto.username) {
+    const existing = await this.database.prisma.user.findUnique({
+      where: { username: dto.username },
     });
-
-    return this.getProfile(user.id);
+    if (existing && existing.id !== userId) {
+      throw new BadRequestException('Username already taken');
+    }
   }
+  return this.database.prisma.user.update({
+    where: { id: userId },
+    data: {
+      username: dto.username,
+      bio: dto.bio,
+      avatar: dto.avatar,
+    },
+  });
+}
 
   async setUserBan(userId: string, banned: boolean) {
     await this.database.prisma.user.update({
@@ -146,5 +144,24 @@ export class UserService {
     }
 
     return username;
+  }
+
+  async getActiveBadges(userId: string) {
+    const inventory = await this.database.prisma.inventory.findMany({
+      where: {
+        ownerId: userId,
+        ownerType: 'USER',
+        active: true,
+        item: { type: 'BADGE' },
+      },
+      include: { item: true },
+      orderBy: { createdAt: 'desc' },
+      take: 3,
+    });
+    return inventory.map(i => ({
+      id: i.item.id,
+      name: i.item.name,
+      icon: i.item.icon,
+    }));
   }
 }

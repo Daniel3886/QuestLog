@@ -97,6 +97,9 @@ export const authApi = {
 // Users
 export const usersApi = {
   me: () => apiFetch<UserProfile>('/users/me'),
+  updateProfile: (data: { username?: string; bio?: string; avatar?: string }) =>
+  apiFetch<UserProfile>('/users/me', { method: 'PATCH', body: JSON.stringify(data) }),
+  getActiveBadges: () => apiFetch<{ id: string; name: string; icon: string }[]>('/users/me/badges'),
 };
 
 // Quests (lobby + public)
@@ -183,6 +186,7 @@ export const commentsApi = {
     apiFetch(`/comments/${reportId}/restore`, { method: 'PATCH' }),
 };
 
+// Friends
 export const friendsApi = {
   list: () => apiFetch<FriendSummary[]>('/friends'),
   listPending: () => apiFetch<FriendRequest[]>('/friends/pending'),  // new
@@ -197,6 +201,7 @@ export const friendsApi = {
     apiFetch(`/friends/${friendId}`, { method: 'DELETE' }),
 };
 
+// Reports
 export const reportsApi = {
   create: (
     reportedType: string,
@@ -246,6 +251,7 @@ export const leaderboardsApi = {
     apiFetch<RankedUser | null>(`/leaderboards/users/me?metric=${metric}`),
 };
 
+// Admin
 export const adminApi = {
   deleteReport: (reportId: string) =>
     apiFetch(`/admin/reports/${reportId}`, { method: 'DELETE' }),

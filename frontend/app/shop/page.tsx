@@ -46,10 +46,22 @@ export default function ShopPage() {
         // User is not in a guild – ignore
         }
 
+        const transformInventory = (inv: any): InventoryItem => ({
+          id: inv.id,
+          itemId: inv.itemId,
+          name: inv.item.name,
+          description: inv.item.description,
+          icon: inv.item.icon,
+          active: inv.active,
+          type: inv.item.type,
+          purchasedAt: inv.createdAt,
+        });
+
+        // Inside loadData:
         const [itemsData, userInvData, guildInvData] = await Promise.all([
-        shopApi.listItems(),
-        shopApi.getInventory('USER'),
-        guildId ? shopApi.getInventory('GUILD', guildId) : Promise.resolve([]),
+          shopApi.listItems(),
+          shopApi.getInventory('USER').then(data => data.map(transformInventory)),
+          guildId ? shopApi.getInventory('GUILD', guildId).then(data => data.map(transformInventory)) : Promise.resolve([]),
         ]);
 
         setItems(itemsData);
@@ -94,10 +106,21 @@ export default function ShopPage() {
   try {
     await shopApi.setActive(inventoryId, active);
 
-    const [userInv, guildInv] = await Promise.all([
-      shopApi.getInventory('USER'),
-      userGuildId ? shopApi.getInventory('GUILD', userGuildId) : Promise.resolve([]),
-    ]);
+    const transformInventory = (inv: any): InventoryItem => ({
+          id: inv.id,
+          itemId: inv.itemId,
+          name: inv.item.name,
+          description: inv.item.description,
+          icon: inv.item.icon,
+          active: inv.active,
+          type: inv.item.type,
+          purchasedAt: inv.createdAt,
+        });
+
+        const [ userInv, guildInv] = await Promise.all([
+          shopApi.getInventory('USER').then(data => data.map(transformInventory)),
+          userGuildId ? shopApi.getInventory('GUILD', userGuildId).then(data => data.map(transformInventory)) : Promise.resolve([]),
+        ]);
     setUserInventory(userInv);
     setGuildInventory(guildInv);
   } catch (err: any) {
@@ -160,7 +183,7 @@ export default function ShopPage() {
             <div key={item.id} className="shop-item pixel-card">
               <div className="shop-item__icon">{item.icon}</div>
               <div className="shop-item__info">
-                <h3>{item.name}</h3>
+                <h3>{item.name} ({item.type})</h3>
                 <p className="shop-item__desc">{item.description || 'No description'}</p>
                 <div className="shop-item__prices">
                   {item.priceCoins > 0 && <span>💰 {item.priceCoins} coins</span>}
@@ -202,16 +225,18 @@ export default function ShopPage() {
               <h3>{inv.name}</h3>
               <p className="shop-item__desc">{inv.description || 'No description'}</p>
               <div className="shop-item__status">
-                <span>Status: {inv.active ? '✅ Active' : '❌ Inactive'}</span>
+                {inv.type == "BADGE" && (<span>Status: {inv.active ? '✅ Active' : '❌ Inactive'}</span>)}
                 <span>Purchased: {new Date(inv.purchasedAt).toLocaleDateString()}</span>
               </div>
-              <button
-                className="pixel-btn pixel-btn--small"
-                onClick={() => handleSetActive(inv.id, !inv.active)}
-                disabled={submitting}
-              >
-                {inv.active ? 'Deactivate' : 'Activate'}
-              </button>
+              {inv.type == "BADGE" && (
+                <button
+                  className="pixel-btn pixel-btn--small"
+                  onClick={() => handleSetActive(inv.id, !inv.active)}
+                  disabled={submitting}
+                >
+                  {inv.active ? 'Deactivate' : 'Activate'}
+                </button>
+              )}
             </div>
           </div>
         ))}

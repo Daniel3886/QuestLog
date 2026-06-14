@@ -9,6 +9,7 @@ import ErrorBanner from '@/components/ErrorBanner';
 import './lobby.scss';
 import ThemeSwitcher from '@/components/ThemeSwitcher';
 import AdminPanel from '@/components/AdminPanel';
+import EditProfileModal from '@/components/EditProfileModal';
 
 const availableIcons = ['🏃', '📚', '🧘', '💪', '🗣️', '🎨', '🎸', '🍳', '💧', '🌟'];
 
@@ -39,6 +40,21 @@ export default function LobbyPage() {
     unit: 'times',
     icon: '⚔️',
   });
+
+  const [activeBadges, setActiveBadges] = useState<{ id: string; name: string; icon: string }[]>([]);
+  const [showEditModal, setShowEditModal] = useState(false);
+
+  useEffect(() => {
+    const loadBadges = async () => {
+      const badges = await usersApi.getActiveBadges();
+      setActiveBadges(badges);
+    };
+    loadBadges();
+  }, []);
+
+  const handleProfileUpdate = (updated: UserProfile) => {
+    setUser(updated);
+  };
 
   const loadData = useCallback(async () => {
     setError('');
@@ -207,35 +223,52 @@ export default function LobbyPage() {
               <div className="lobby__character-level">Lv.{user.level}</div>
             </div>
             <div className="lobby__character-stats">
+              <div className="lobby__badges">
+                {activeBadges.map(badge => (
+                  <span key={badge.id} className="lobby__badge" title={badge.name}>
+                    {badge.icon}
+                  </span>
+                ))}
+              </div>
               <div className="lobby__xp-bar">
-                <div
-                  className="lobby__xp-fill"
-                  style={{ width: `${getXpPercentage()}%` }}
-                ></div>
-                <span className="lobby__xp-text">
-                  {user.xp}/{user.xpNext} XP
-                </span>
+                <div className="lobby__xp-fill" style={{ width: `${getXpPercentage()}%` }}></div>
+                <span className="lobby__xp-text">{user.xp}/{user.xpNext} XP</span>
               </div>
               <div className="lobby__stat-row">
                 <span className="lobby__stat">💰 {user.coins} coins</span>
                 <span className="lobby__stat">🔥 {user.streak} day streak</span>
-                <span className="lobby__stat">
-                  📆 {user.weekStreak}/7 this week
-                </span>
+                <span className="lobby__stat">📆 {user.weekStreak}/7 this week</span>
               </div>
+              <button
+                className="pixel-btn pixel-btn--small"
+                onClick={() => setShowEditModal(true)}
+                style={{ marginTop: '0.5rem' }}
+              >
+                Edit Profile
+              </button>
             </div>
           </div>
 
           <div className="lobby__daily-summary">
             <div className="lobby__daily-icon">📋</div>
             <div className="lobby__daily-text">
-              <span className="lobby__daily-label">Today&apos;s Progress</span>
+              <span className="lobby__daily-label">Today's Progress</span>
               <span className="lobby__daily-value">
                 {user.completedToday}/{dailyQuestCount || user.dailyQuestCount}
               </span>
             </div>
           </div>
         </div>
+      )}
+
+      {/* EditProfileModal – placed at the end of the component */}
+      {user && (
+        <EditProfileModal
+          open={showEditModal}
+          onClose={() => setShowEditModal(false)}
+          profile={user}
+          onUpdate={handleProfileUpdate}
+        />
       )}
 
       <div className="lobby__quests-header">
@@ -358,6 +391,23 @@ export default function LobbyPage() {
               >
                 Accept
               </button>
+              <button
+                className="pixel-btn pixel-btn--small"
+                onClick={async () => {
+                  setSubmitting(true);
+                  try {
+                    await friendsApi.remove(req.id);
+                    await loadData(); // refresh friends and pending
+                  } catch (err) {
+                    setError(err instanceof ApiError ? err.message : 'Failed to remove request');
+                  } finally {
+                    setSubmitting(false);
+                  }
+                }}
+                disabled={submitting}
+              >
+                Remove
+              </button>
             </div>
           ))}
         </div>
@@ -371,6 +421,23 @@ export default function LobbyPage() {
               <div key={friend.id} className="friend-item">
                 <span>{friend.avatar}</span>
                 <span>{friend.username}</span>
+                <button
+                className="pixel-btn pixel-btn--small"
+                onClick={async () => {
+                  setSubmitting(true);
+                  try {
+                    await friendsApi.remove(friend.id);
+                    await loadData(); // refresh friends and pending
+                  } catch (err) {
+                    setError(err instanceof ApiError ? err.message : 'Failed to remove friend');
+                  } finally {
+                    setSubmitting(false);
+                  }
+                }}
+                disabled={submitting}
+              >
+                Remove
+              </button>
               </div>
             ))
           )}

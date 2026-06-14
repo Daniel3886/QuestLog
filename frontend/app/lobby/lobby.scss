@@ -408,3 +408,34 @@
     box-shadow: 0 0 0 2px var(--pixel-border);
   }
 }
+
+
+.avatar-selector {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+}
+
+.avatar-option {
+  width: 48px;
+  height: 48px;
+  font-size: 1.8rem;
+  background: var(--pixel-bg);
+  border: 2px solid var(--pixel-border);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.05s linear;
+
+  &:hover {
+    transform: translate(2px, 2px);
+  }
+
+  &.active {
+    border-color: var(--pixel-primary);
+    background: var(--pixel-card);
+    box-shadow: 0 0 0 2px var(--pixel-border);
+  }
+}

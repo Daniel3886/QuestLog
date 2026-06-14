@@ -1,24 +1,32 @@
 'use client';
+import React, { useEffect, useState } from 'react';
+import { shopApi } from '@/lib/api';
+import { isLoggedIn } from '@/lib/auth';
+import { themeMapping } from '@/lib/theme-config';
 
-import { useEffect, useState } from 'react';
-
-const themes = [
+const DEFAULT_THEMES = [
   { value: 'pixel-dark', label: '🌙 Pixel Dark' },
-  { value: 'pixel-light', label: '☀️ Pixel Light' },
-  { value: 'retro-neon', label: '💚 Retro Neon' },
 ];
 
 export default function ThemeSwitcher() {
   const [currentTheme, setCurrentTheme] = useState('pixel-dark');
+  const [availableThemes, setAvailableThemes] = useState(DEFAULT_THEMES);
 
   useEffect(() => {
-    const saved = localStorage.getItem('questlog-theme');
-    if (saved && themes.some(t => t.value === saved)) {
-      setCurrentTheme(saved);
-      document.documentElement.setAttribute('data-theme', saved);
-    } else {
-      document.documentElement.setAttribute('data-theme', currentTheme);
-    }
+    const loadThemes = async () => {
+      if (!isLoggedIn()) return;
+      try {
+        const inventory = await shopApi.getInventory('USER');
+        const cosmetics = inventory.filter(i => i.type === 'COSMETIC');
+        const extraThemes = cosmetics
+          .map(item => themeMapping[item.name] ?? null)
+          .filter((theme): theme is { value: string; label: string } => theme !== null);
+        setAvailableThemes([...DEFAULT_THEMES, ...extraThemes]);
+      } catch (e) {
+        console.warn('Could not load cosmetics', e);
+      }
+    };
+    loadThemes();
   }, []);
 
   const changeTheme = (theme: string) => {
@@ -27,18 +35,20 @@ export default function ThemeSwitcher() {
     localStorage.setItem('questlog-theme', theme);
   };
 
+  // restore saved theme on mount
+  useEffect(() => {
+    const saved = localStorage.getItem('questlog-theme');
+    if (saved && availableThemes.some(t => t.value === saved)) {
+      setCurrentTheme(saved);
+      document.documentElement.setAttribute('data-theme', saved);
+    }
+  }, [availableThemes]);
+
   return (
     <div className="theme-switcher">
-      <select
-        value={currentTheme}
-        onChange={(e) => changeTheme(e.target.value)}
-        className="pixel-input"
-        style={{ fontSize: '0.8rem', padding: '0.3rem' }}
-      >
-        {themes.map(theme => (
-          <option key={theme.value} value={theme.value}>
-            {theme.label}
-          </option>
+      <select value={currentTheme} onChange={(e) => changeTheme(e.target.value)} className="pixel-input">
+        {availableThemes.map(theme => (
+          <option key={theme.value} value={theme.value}>{theme.label}</option>
         ))}
       </select>
     </div>

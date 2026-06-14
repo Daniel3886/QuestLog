@@ -106,38 +106,32 @@ export class ShopService {
   }
 
   async setActive(userId: string, inventoryId: string, active: boolean) {
-    const entry = await this.database.prisma.inventory.findUnique({
+    const inv = await this.database.prisma.inventory.findUnique({
       where: { id: inventoryId },
       include: { item: true },
     });
-    if (!entry) {
-      throw new NotFoundException('Inventory entry not found');
-    }
+    if (!inv) throw new NotFoundException('Inventory item not found');
+    if (inv.ownerId !== userId) throw new ForbiddenException();
 
-    if (entry.ownerType === $Enums.OwnerType.USER) {
-      if (entry.ownerId !== userId) {
-        throw new ForbiddenException('Not your inventory');
-      }
-    } else {
-      await this.ensureGuildLeader(entry.ownerId, userId);
-    }
-
-    if (active) {
-      await this.database.prisma.inventory.updateMany({
+    if (active && inv.item.type === 'BADGE') {
+      const activeCount = await this.database.prisma.inventory.count({
         where: {
-          ownerId: entry.ownerId,
-          ownerType: entry.ownerType,
-          item: { type: entry.item.type },
+          ownerId: userId,
+          ownerType: 'USER',
+          active: true,
+          item: { type: 'BADGE' },
         },
-        data: { active: false },
       });
+      if (activeCount >= 3) {
+        throw new BadRequestException('You can only activate up to 3 badges');
+      }
     }
 
-    return this.database.prisma.inventory.update({
+    await this.database.prisma.inventory.update({
       where: { id: inventoryId },
       data: { active },
-      include: { item: true },
     });
+    return { success: true };
   }
 
   private async ensureGuildMember(guildId: string, userId: string) {

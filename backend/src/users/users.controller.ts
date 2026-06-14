@@ -21,6 +21,12 @@ export class UsersController {
     return this.userService.updateProfile(user.id, dto);
   }
 
+  @Get('me/badges')
+  @UseGuards(JwtAuthGuard)
+  async getActiveBadges(@User() user: AuthUser) {
+    return this.userService.getActiveBadges(user.id);
+  }
+
   @UseGuards(AdminGuard)
   @Patch(':id/ban')
   banUser(@Param('id') id: string) {

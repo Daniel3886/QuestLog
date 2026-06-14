@@ -10,15 +10,34 @@ export default function SiteHeader() {
   const [username, setUsername] = useState<string | null>(null);
   const [userAvatar, setUserAvatar] = useState('🧙');
 
+  const fetchUserData = async () => {
+    try {
+      const user = await usersApi.me();
+      setUsername(user.username);
+      setUserAvatar(user.avatar || '🧙');
+    } catch (err) {
+      setUsername(null);
+      setUserAvatar('🧙');
+    }
+  };
+
   useEffect(() => {
     const authed = isLoggedIn();
     setLoggedIn(authed);
     if (authed) {
-      usersApi
-        .me()
-        .then((u) => setUsername(u.username))
-        .catch(() => setUsername(null));
+      fetchUserData();
     }
+  }, []);
+
+  useEffect(() => {
+    const handleProfileUpdate = () => {
+      if (isLoggedIn()) {
+        fetchUserData();
+      }
+    };
+
+    window.addEventListener('profile-updated', handleProfileUpdate);
+    return () => window.removeEventListener('profile-updated', handleProfileUpdate);
   }, []);
 
   return (

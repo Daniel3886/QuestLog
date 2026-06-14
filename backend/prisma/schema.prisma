@@ -398,8 +398,7 @@ enum FriendStatus {
 
 enum ItemType {
   BADGE
-  AVATAR
-  BOOST
+  AVATAR  
   COSMETIC
 }
 
