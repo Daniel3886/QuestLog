@@ -63,6 +63,18 @@
     flex-direction: column;
     gap: 1.25rem;
   }
+  
+  .policy-link {
+      color: var(--pixel-secondary);
+      text-decoration: none;
+      font-weight: bold;
+      transition: all 0.05s linear;
+      
+      &:hover {
+        color: var(--pixel-primary);
+        text-shadow: 0 0 2px var(--pixel-primary);
+      }
+    }
 
   &__field {
     display: flex;
@@ -75,6 +87,7 @@
       color: var(--pixel-text);
       letter-spacing: 0.5px;
     }
+
 
     .pixel-input {
       background: var(--pixel-bg);

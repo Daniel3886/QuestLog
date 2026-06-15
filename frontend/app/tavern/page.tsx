@@ -204,6 +204,8 @@ export default function TavernPage() {
     }
   };
 
+
+
   const handleReportComment = async (commentId: string) => {
     if (!requireAuth()) return;
     setSubmitting(true);
@@ -617,6 +619,12 @@ export default function TavernPage() {
                         >
                           Report
                         </button>
+                        {/* <button
+                          className="pixel-btn pixel-btn--secondary pixel-btn--tiny"
+                          onClick={() => }
+                        >
+                          Delete
+                        </button> */}
                       </div>
                     ))
                   )}

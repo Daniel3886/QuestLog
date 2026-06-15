@@ -100,6 +100,13 @@ export default function RegisterPage() {
               required
             />
           </div>
+          <div className="policy-note">
+            By creating an account, you agree to our{' '}
+            <a href="/terms" target="_blank" rel="noopener noreferrer">
+              <span className="policy-link">Terms of Service</span>
+            </a>
+            .
+          </div>
           {error && <div className="register__error">{error}</div>}
           <button
             type="submit"

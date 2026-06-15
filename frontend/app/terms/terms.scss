@@ -1,0 +1,114 @@
+// app/terms/terms.scss
+
+.terms {
+  min-height: calc(100vh - var(--pixel-topbar-height) - 150px);
+  padding: 2rem 1rem;
+
+  &__particles {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-image: repeating-linear-gradient(
+      45deg,
+      rgba(124, 58, 237, 0.03) 0px,
+      rgba(124, 58, 237, 0.03) 2px,
+      transparent 2px,
+      transparent 8px
+    );
+    pointer-events: none;
+    z-index: -1;
+  }
+
+  &__container {
+    max-width: 900px;
+    margin: 0 auto;
+    background: var(--pixel-card);
+    border: 4px solid var(--pixel-border);
+    box-shadow: 8px 8px 0 rgba(0, 0, 0, 0.4);
+    padding: 2rem;
+  }
+
+  &__header {
+    text-align: center;
+    margin-bottom: 2rem;
+    border-bottom: 2px dashed var(--pixel-border);
+    padding-bottom: 1rem;
+  }
+
+  &__icon {
+    font-size: 4rem;
+    margin-bottom: 0.5rem;
+  }
+
+  &__subtitle {
+    font-size: 0.85rem;
+    color: var(--pixel-text-dim);
+    margin-top: 0.5rem;
+  }
+
+  &__content {
+    display: flex;
+    flex-direction: column;
+    gap: 1.75rem;
+  }
+
+  &__section {
+    h2 {
+      font-size: 1.3rem;
+      color: var(--pixel-primary);
+      margin-bottom: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+
+    p {
+      font-size: 0.9rem;
+      color: var(--pixel-text-dim);
+      line-height: 1.6;
+      margin-bottom: 0.5rem;
+    }
+
+    ul {
+      margin: 0.5rem 0 0 1.5rem;
+      padding: 0;
+      list-style-type: square;
+      
+      li {
+        font-size: 0.85rem;
+        color: var(--pixel-text-dim);
+        margin-bottom: 0.25rem;
+      }
+    }
+  }
+
+  &__footer {
+    display: flex;
+    justify-content: center;
+    gap: 1rem;
+    margin-top: 2rem;
+    padding-top: 1.5rem;
+    border-top: 2px dashed var(--pixel-border);
+  }
+}
+
+// Responsive
+@media (max-width: 640px) {
+  .terms {
+    padding: 1rem;
+  }
+
+  .terms__container {
+    padding: 1rem;
+  }
+
+  .terms__section h2 {
+    font-size: 1.1rem;
+  }
+
+  .terms__footer {
+    flex-direction: column;
+    align-items: center;
+  }
+}
