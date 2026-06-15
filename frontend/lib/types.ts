@@ -169,6 +169,10 @@ export interface FriendSummary {
   username: string;
   avatar: string;
   streak: number;
+  weekStreak?: number;
+  level?: number;
+  xp?: number;
+  xpNext?: number;
   since: string;
 }
 

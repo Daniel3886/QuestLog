@@ -4,6 +4,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { $Enums } from '@prisma/client';
+import { deriveUserLevel } from '../common/progression';
 import { DatabaseService } from '../database/database.service';
 
 @Injectable()
@@ -19,19 +20,24 @@ export class FriendsService {
         ],
       },
       include: {
-        user: { select: { id: true, username: true, avatar: true, streak: true } },
-        friend: { select: { id: true, username: true, avatar: true, streak: true } },
+        user: { select: { id: true, username: true, avatar: true, streak: true, xp: true, weekStreak: true } },
+        friend: { select: { id: true, username: true, avatar: true, streak: true, xp: true, weekStreak: true } },
       },
     });
 
     return friendships.map((f) => {
       const other = f.userId === userId ? f.friend : f.user;
+      const progression = deriveUserLevel(other.xp);
       return {
         id: f.id,
         userId: other.id,
         username: other.username,
         avatar: other.avatar,
         streak: other.streak,
+        weekStreak: other.weekStreak,
+        level: progression.level,
+        xp: progression.xp,
+        xpNext: progression.xpToNext,
         since: f.updatedAt,
       };
     });

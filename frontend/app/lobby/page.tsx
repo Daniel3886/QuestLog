@@ -417,29 +417,61 @@ export default function LobbyPage() {
           {friends.length === 0 ? (
             <p>No friends yet. Send a request to start adventuring together.</p>
           ) : (
-            friends.map((friend) => (
-              <div key={friend.id} className="friend-item">
-                <span>{friend.avatar}</span>
-                <span>{friend.username}</span>
-                <button
-                className="pixel-btn pixel-btn--small"
-                onClick={async () => {
-                  setSubmitting(true);
-                  try {
-                    await friendsApi.remove(friend.id);
-                    await loadData(); // refresh friends and pending
-                  } catch (err) {
-                    setError(err instanceof ApiError ? err.message : 'Failed to remove friend');
-                  } finally {
-                    setSubmitting(false);
-                  }
-                }}
-                disabled={submitting}
-              >
-                Remove
-              </button>
-              </div>
-            ))
+            friends.map((friend) => {
+              const level = friend.level ?? 1;
+              const xp = friend.xp ?? 0;
+              const xpNext = friend.xpNext ?? 100;
+              const xpPercent = xpNext > 0 ? Math.round((xp / (xp + xpNext)) * 100) : 0;
+
+              return (
+                <div key={friend.id} className="friend-item">
+                  <div className="friend-item__main">
+                    <div className="friend-item__summary">
+                      <span className="friend-item__avatar">{friend.avatar}</span>
+                      <span className="friend-item__username">{friend.username}</span>
+                    </div>
+                    <button
+                      className="pixel-btn pixel-btn--small"
+                      onClick={async () => {
+                        setSubmitting(true);
+                        try {
+                          await friendsApi.remove(friend.id);
+                          await loadData(); // refresh friends and pending
+                        } catch (err) {
+                          setError(err instanceof ApiError ? err.message : 'Failed to remove friend');
+                        } finally {
+                          setSubmitting(false);
+                        }
+                      }}
+                      disabled={submitting}
+                    >
+                      Remove
+                    </button>
+                  </div>
+
+                  <div className="friend-item__hover-card">
+                    <div className="friend-item__hover-header">
+                      <div className="friend-item__hover-avatar">
+                        <span>{friend.avatar}</span>
+                        <div className="friend-item__hover-level">Lv.{level}</div>
+                      </div>
+                      <div>
+                        <div className="friend-item__hover-name">{friend.username}</div>
+                        <div className="friend-item__hover-since">Friend since {new Date(friend.since).toLocaleDateString()}</div>
+                      </div>
+                    </div>
+                    <div className="friend-item__xp-bar">
+                      <div className="friend-item__xp-fill" style={{ width: `${xpPercent}%` }} />
+                      <span className="friend-item__xp-text">{xp}/{xp + xpNext} XP</span>
+                    </div>
+                    <div className="friend-item__hover-stats">
+                      <span>🔥 {friend.streak} streak</span>
+                      <span>📆 {friend.weekStreak ?? 0}/7 this week</span>
+                    </div>
+                  </div>
+                </div>
+              );
+            })
           )}
         </div>
         <div className="lobby__friends-request">
