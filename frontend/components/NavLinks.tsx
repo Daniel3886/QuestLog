@@ -21,11 +21,12 @@ export default function NavLinks() {
 
   return (
     <>
-      <Link href="/lobby">Lobby</Link>
-      {!hideSocial && <Link href="/tavern">Tavern</Link>}
-      {!hideSocial && <Link href="/guilds">Guilds</Link>}
-      <Link href="/leaderboards">Leaderboards</Link>
-      <Link href="/shop">Shop</Link>
+      <Link href="/lobby">🏠 <span>LOBBY</span></Link>
+          {!hideSocial && (<>
+          <Link href="/tavern">🍺 <span>TAVERN</span></Link>
+          <Link href="/guilds">⚔️ <span>GUILDS</span></Link>
+          <Link href="/shop">🛒 <span>SHOP</span></Link>
+          <Link href="/leaderboards">🏆 <span>RANK</span></Link></>)}
     </>
   );
 }

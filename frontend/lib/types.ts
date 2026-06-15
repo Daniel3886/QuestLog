@@ -174,6 +174,7 @@ export interface FriendSummary {
   xp?: number;
   xpNext?: number;
   since: string;
+  bio?: string | null;
 }
 
 

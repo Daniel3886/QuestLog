@@ -27,10 +27,8 @@ export default function ThemeSwitcher() {
         });
         const inventory = await shopApi.getInventory('USER').then(data => data.map(transformInventory));
         const cosmetics = inventory.filter(i => i.type === 'COSMETIC');
-        console.log('Loaded cosmetics:', cosmetics);
         const extraThemes = cosmetics
           .map(item => {
-            console.log('Found cosmetic item:', item.name);
             if (item.name === 'Pixel Light Theme') return { value: 'pixel-light', label: '☀️ Pixel Light' };
             if (item.name === 'Retro Neon Theme') return { value: 'retro-neon', label: '💚 Retro Neon' };
             return null;

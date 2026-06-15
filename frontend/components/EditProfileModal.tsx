@@ -1,8 +1,9 @@
 'use client';
 
-import React, { useState } from 'react';
-import {usersApi} from '@/lib/api';
-import type {UserProfile} from '@/lib/types';
+import React, { useState, useEffect } from 'react';
+import { usersApi, shopApi } from '@/lib/api';
+import type { UserProfile } from '@/lib/types';
+import type { InventoryItem } from '@/lib/api';
 
 type EditProfileModalProps = {
   open: boolean;
@@ -11,35 +12,65 @@ type EditProfileModalProps = {
   onUpdate: (updated: UserProfile) => void;
 };
 
-const avatarOptions = ['🧙', '🗡️', '✨', '💚', '⚡', '🛡️', '🌿', '🏹', '🔮', '🐺', '🐉', '🔥', '💧', '🌟'];
-
 export default function EditProfileModal({ open, onClose, profile, onUpdate }: EditProfileModalProps) {
   const [username, setUsername] = useState(profile.username);
   const [bio, setBio] = useState(profile.bio || '');
   const [avatar, setAvatar] = useState(profile.avatar || '🧙');
   const [error, setError] = useState('');
   const [submitting, setSubmitting] = useState(false);
+  const [availableAvatars, setAvailableAvatars] = useState<string[]>(['🧙']);
+
+  // Load owned avatar items when modal opens
+  useEffect(() => {
+    if (!open) return;
+    const loadAvatars = async () => {
+      try {
+        const transformInventory = (inv: any): InventoryItem => ({
+          id: inv.id,
+          itemId: inv.itemId,
+          name: inv.item.name,
+          description: inv.item.description,
+          icon: inv.item.icon,
+          active: inv.active,
+          type: inv.item.type,
+          purchasedAt: inv.createdAt,
+        });
+        const inventory = await shopApi.getInventory('USER').then(data => data.map(transformInventory));
+        const ownedAvatars = inventory
+          .filter(item => item.type === 'AVATAR')
+          .map(item => item.icon);
+        // Combine default + owned, remove duplicates
+        const all = Array.from(new Set(['🧙', ...ownedAvatars]));
+        setAvailableAvatars(all);
+      } catch (err) {
+        console.warn('Could not load avatars', err);
+        // Keep default only
+        setAvailableAvatars(['🧙']);
+      }
+    };
+    loadAvatars();
+  }, [open]);
 
   const handleSubmit = async (e: React.FormEvent) => {
-  e.preventDefault();
-  setError('');
-  setSubmitting(true);
+    e.preventDefault();
+    setError('');
+    setSubmitting(true);
 
-  try {
-    const updated = await usersApi.updateProfile({
-      username: username !== profile.username ? username : undefined,
-      bio: bio !== profile.bio ? bio : undefined,
-      avatar: avatar !== profile.avatar ? avatar : undefined,
-    });
-    onUpdate(updated);
-    window.dispatchEvent(new CustomEvent('profile-updated', { detail: updated }));
-    onClose();
-  } catch (err: any) {
-    setError(err.message || 'Failed to update profile');
-  } finally {
-    setSubmitting(false);
-  }
-};
+    try {
+      const updated = await usersApi.updateProfile({
+        username: username !== profile.username ? username : undefined,
+        bio: bio !== profile.bio ? bio : undefined,
+        avatar: avatar !== profile.avatar ? avatar : undefined,
+      });
+      onUpdate(updated);
+      window.dispatchEvent(new CustomEvent('profile-updated', { detail: updated }));
+      onClose();
+    } catch (err: any) {
+      setError(err.message || 'Failed to update profile');
+    } finally {
+      setSubmitting(false);
+    }
+  };
 
   if (!open) return null;
 
@@ -79,7 +110,7 @@ export default function EditProfileModal({ open, onClose, profile, onUpdate }: E
             <div className="modal__field">
               <label>Avatar Emoji</label>
               <div className="avatar-selector">
-                {avatarOptions.map(emoji => (
+                {availableAvatars.map(emoji => (
                   <button
                     key={emoji}
                     type="button"

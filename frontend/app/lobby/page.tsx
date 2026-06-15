@@ -493,6 +493,7 @@ const toggleHideSocial = () => {
                   </div>
                   <div>
                     <div className="friend-item__hover-name">{friend.username}</div>
+                    <div className="friend-item__hover-since">{friend.bio || 'No bio available'}</div>
                     <div className="friend-item__hover-since">Friend since {new Date(friend.since).toLocaleDateString()}</div>
                   </div>
                 </div>

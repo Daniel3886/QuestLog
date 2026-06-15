@@ -20,8 +20,8 @@ export class FriendsService {
         ],
       },
       include: {
-        user: { select: { id: true, username: true, avatar: true, streak: true, xp: true, weekStreak: true } },
-        friend: { select: { id: true, username: true, avatar: true, streak: true, xp: true, weekStreak: true } },
+        user: { select: { id: true, username: true, avatar: true, streak: true, xp: true, weekStreak: true, bio: true } },
+        friend: { select: { id: true, username: true, avatar: true, streak: true, xp: true, weekStreak: true, bio: true } },
       },
     });
 
@@ -38,6 +38,7 @@ export class FriendsService {
         level: progression.level,
         xp: progression.xp,
         xpNext: progression.xpToNext,
+        bio: other.bio,
         since: f.updatedAt,
       };
     });
