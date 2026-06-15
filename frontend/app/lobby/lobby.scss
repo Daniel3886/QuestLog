@@ -1,4 +1,68 @@
 // app/lobby/lobby.scss
+.lobby__social-toggle {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  background: rgba(0, 0, 0, 0.3);
+  padding: 0.25rem 0.75rem;
+  border: 2px solid var(--pixel-border);
+  border-radius: 2rem;
+
+  &-label {
+    font-size: 0.75rem;
+    color: var(--pixel-text-dim);
+  }
+}
+
+.pixel-switch {
+  position: relative;
+  display: inline-block;
+  width: 48px;
+  height: 24px;
+
+  input {
+    opacity: 0;
+    width: 0;
+    height: 0;
+  }
+
+  &__slider {
+    position: absolute;
+    cursor: pointer;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: var(--pixel-bg-light);
+    border: 2px solid var(--pixel-border);
+    transition: 0.1s;
+    
+    &::before {
+      position: absolute;
+      content: "🌐";
+      font-size: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      height: 18px;
+      width: 18px;
+      left: 2px;
+      bottom: 2px;
+      background: var(--pixel-card);
+      transition: 0.1s;
+    }
+  }
+
+  input:checked + &__slider {
+    background-color: var(--pixel-primary);
+  }
+
+  input:checked + &__slider::before {
+    transform: translateX(22px);
+    content: "🔒";
+  }
+}
+
 
 .lobby {
   min-height: 100vh;
@@ -21,6 +85,8 @@
     pointer-events: none;
     z-index: -1;
   }
+
+
 
   // Header / Character Stats
   &__header {

@@ -1,5 +1,5 @@
 'use client';
-
+import NavLinks from '@/components/NavLinks';
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { isLoggedIn, logout } from '@/lib/auth';
@@ -49,11 +49,9 @@ export default function SiteHeader() {
         </Link>
 
         <nav className="pixel-nav" aria-label="Main navigation">
-          <Link href="/lobby">🏠 <span>LOBBY</span></Link>
-          <Link href="/tavern">🍺 <span>TAVERN</span></Link>
-          <Link href="/guilds">⚔️ <span>GUILDS</span></Link>
-          <Link href="/shop">🛒 Shop</Link>
-          <Link href="/leaderboards">🏆 <span>RANK</span></Link>
+          <nav className="pixel-nav" aria-label="Main navigation">
+  <NavLinks />
+</nav>
         </nav>
 
         <div className="pixel-actions">

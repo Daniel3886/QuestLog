@@ -5,6 +5,7 @@ import Link from 'next/link';
 import SiteHeader from '@/components/SiteHeader';
 import BugReportButton from '@/components/BugReportButton';
 
+
 const geistSans = Geist({
   variable: '--font-geist-sans',
   subsets: ['latin'],

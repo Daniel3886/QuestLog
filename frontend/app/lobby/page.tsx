@@ -165,6 +165,28 @@ export default function LobbyPage() {
     }
   };
 
+const [hideSocial, setHideSocial] = useState(false);
+
+// Load preference from localStorage on mount
+useEffect(() => {
+  const saved = localStorage.getItem('questlog_hide_social');
+  if (saved === 'true') {
+    setHideSocial(true);
+  }
+}, []);
+
+// Save preference when changed
+const toggleHideSocial = () => {
+  const newValue = !hideSocial;
+  setHideSocial(newValue);
+  localStorage.setItem('questlog_hide_social', String(newValue));
+  // Also notify the layout (optional – using event)
+  window.dispatchEvent(new StorageEvent('storage', {
+    key: 'questlog_hide_social',
+    newValue: String(newValue),
+  }));
+};
+
   const handleUpdateQuest = async () => {
     if (!editQuest || !editQuest.title.trim()) return;
     setSubmitting(true);
@@ -270,6 +292,19 @@ export default function LobbyPage() {
           onUpdate={handleProfileUpdate}
         />
       )}
+      <div className="lobby__social-toggle">
+  <label className="pixel-switch">
+    <input
+      type="checkbox"
+      checked={hideSocial}
+      onChange={toggleHideSocial}
+    />
+    <span className="pixel-switch__slider"></span>
+  </label>
+  <span className="lobby__social-toggle-label">
+    {hideSocial ? '🔒 Focus Mode ON' : '🌐 Social Features ON'}
+  </span>
+</div>
 
       <div className="lobby__quests-header">
         <h2 className="pixel-heading">📜 ACTIVE QUESTS 📜</h2>
@@ -361,149 +396,152 @@ export default function LobbyPage() {
         </button>
       </div>
 
-      <div className="lobby__friends-panel pixel-card">
-        <div className="lobby__friends-header">
-          <h3>Friends</h3>
-          <small>Keep your party close and invite new allies.</small>
-        </div>
+      {!hideSocial && (
+  <div className="lobby__friends-panel pixel-card">
+    <div className="lobby__friends-header">
+      <h3>Friends</h3>
+      <small>Keep your party close and invite new allies.</small>
+    </div>
 
-        {pendingRequests.length > 0 && (
-        <div className="lobby__pending-requests">
-          <h4>Pending requests</h4>
-          {pendingRequests.map((req) => (
-            <div key={req.id} className="friend-item pending">
-              <span>{req.avatar}</span>
-              <span>{req.username}</span>
-              <button
-                className="pixel-btn pixel-btn--small"
-                onClick={async () => {
-                  setSubmitting(true);
-                  try {
-                    await friendsApi.accept(req.id);
-                    await loadData(); // refresh friends and pending
-                  } catch (err) {
-                    setError(err instanceof ApiError ? err.message : 'Failed to accept request');
-                  } finally {
-                    setSubmitting(false);
-                  }
-                }}
-                disabled={submitting}
-              >
-                Accept
-              </button>
-              <button
-                className="pixel-btn pixel-btn--small"
-                onClick={async () => {
-                  setSubmitting(true);
-                  try {
-                    await friendsApi.remove(req.id);
-                    await loadData(); // refresh friends and pending
-                  } catch (err) {
-                    setError(err instanceof ApiError ? err.message : 'Failed to remove request');
-                  } finally {
-                    setSubmitting(false);
-                  }
-                }}
-                disabled={submitting}
-              >
-                Remove
-              </button>
-            </div>
-          ))}
-        </div>
-      )}
+    {pendingRequests.length > 0 && (
+      <div className="lobby__pending-requests">
+        <h4>Pending requests</h4>
+        {pendingRequests.map((req) => (
+          <div key={req.id} className="friend-item pending">
+            <span>{req.avatar}</span>
+            <span>{req.username}</span>
+            <button
+              className="pixel-btn pixel-btn--small"
+              onClick={async () => {
+                setSubmitting(true);
+                try {
+                  await friendsApi.accept(req.id);
+                  await loadData();
+                } catch (err) {
+                  setError(err instanceof ApiError ? err.message : 'Failed to accept request');
+                } finally {
+                  setSubmitting(false);
+                }
+              }}
+              disabled={submitting}
+            >
+              Accept
+            </button>
+            <button
+              className="pixel-btn pixel-btn--small"
+              onClick={async () => {
+                setSubmitting(true);
+                try {
+                  await friendsApi.remove(req.id);
+                  await loadData();
+                } catch (err) {
+                  setError(err instanceof ApiError ? err.message : 'Failed to remove request');
+                } finally {
+                  setSubmitting(false);
+                }
+              }}
+              disabled={submitting}
+            >
+              Remove
+            </button>
+          </div>
+        ))}
+      </div>
+    )}
 
-        <div className="lobby__friends-list">
-          {friends.length === 0 ? (
-            <p>No friends yet. Send a request to start adventuring together.</p>
-          ) : (
-            friends.map((friend) => {
-              const level = friend.level ?? 1;
-              const xp = friend.xp ?? 0;
-              const xpNext = friend.xpNext ?? 100;
-              const xpPercent = xpNext > 0 ? Math.round((xp / (xp + xpNext)) * 100) : 0;
+    <div className="lobby__friends-list">
+      {friends.length === 0 ? (
+        <p>No friends yet. Send a request to start adventuring together.</p>
+      ) : (
+        friends.map((friend) => {
+          const level = friend.level ?? 1;
+          const xp = friend.xp ?? 0;
+          const xpNext = friend.xpNext ?? 100;
+          const xpPercent = xpNext > 0 ? Math.round((xp / (xp + xpNext)) * 100) : 0;
 
-              return (
-                <div key={friend.id} className="friend-item">
-                  <div className="friend-item__main">
-                    <div className="friend-item__summary">
-                      <span className="friend-item__avatar">{friend.avatar}</span>
-                      <span className="friend-item__username">{friend.username}</span>
-                    </div>
-                    <button
-                      className="pixel-btn pixel-btn--small"
-                      onClick={async () => {
-                        setSubmitting(true);
-                        try {
-                          await friendsApi.remove(friend.id);
-                          await loadData(); // refresh friends and pending
-                        } catch (err) {
-                          setError(err instanceof ApiError ? err.message : 'Failed to remove friend');
-                        } finally {
-                          setSubmitting(false);
-                        }
-                      }}
-                      disabled={submitting}
-                    >
-                      Remove
-                    </button>
+          return (
+            <div key={friend.id} className="friend-item">
+              <div className="friend-item__main">
+                <div className="friend-item__summary">
+                  <span className="friend-item__avatar">{friend.avatar}</span>
+                  <span className="friend-item__username">{friend.username}</span>
+                </div>
+                <button
+                  className="pixel-btn pixel-btn--small"
+                  onClick={async () => {
+                    setSubmitting(true);
+                    try {
+                      await friendsApi.remove(friend.id);
+                      await loadData();
+                    } catch (err) {
+                      setError(err instanceof ApiError ? err.message : 'Failed to remove friend');
+                    } finally {
+                      setSubmitting(false);
+                    }
+                  }}
+                  disabled={submitting}
+                >
+                  Remove
+                </button>
+              </div>
+
+              <div className="friend-item__hover-card">
+                <div className="friend-item__hover-header">
+                  <div className="friend-item__hover-avatar">
+                    <span>{friend.avatar}</span>
+                    <div className="friend-item__hover-level">Lv.{level}</div>
                   </div>
-
-                  <div className="friend-item__hover-card">
-                    <div className="friend-item__hover-header">
-                      <div className="friend-item__hover-avatar">
-                        <span>{friend.avatar}</span>
-                        <div className="friend-item__hover-level">Lv.{level}</div>
-                      </div>
-                      <div>
-                        <div className="friend-item__hover-name">{friend.username}</div>
-                        <div className="friend-item__hover-since">Friend since {new Date(friend.since).toLocaleDateString()}</div>
-                      </div>
-                    </div>
-                    <div className="friend-item__xp-bar">
-                      <div className="friend-item__xp-fill" style={{ width: `${xpPercent}%` }} />
-                      <span className="friend-item__xp-text">{xp}/{xp + xpNext} XP</span>
-                    </div>
-                    <div className="friend-item__hover-stats">
-                      <span>🔥 {friend.streak} streak</span>
-                      <span>📆 {friend.weekStreak ?? 0}/7 this week</span>
-                    </div>
+                  <div>
+                    <div className="friend-item__hover-name">{friend.username}</div>
+                    <div className="friend-item__hover-since">Friend since {new Date(friend.since).toLocaleDateString()}</div>
                   </div>
                 </div>
-              );
-            })
-          )}
-        </div>
-        <div className="lobby__friends-request">
-          <input
-            type="email"
-            placeholder="Friend email"
-            value={friendEmail}
-            onChange={(e) => setFriendEmail(e.target.value)}
-            className="pixel-input"
-          />
-          <button
-            className="pixel-btn"
-            onClick={async () => {
-              if (!friendEmail.trim()) return;
-              setSubmitting(true);
-              setError('');
-              try {
-                await friendsApi.request(friendEmail.trim());
-                setFriendEmail('');
-                await loadData();
-              } catch (err) {
-                setError(err instanceof ApiError ? err.message : 'Failed to send request');
-              } finally {
-                setSubmitting(false);
-              }
-            }}
-            disabled={!friendEmail.trim() || submitting}
-          >
-            Send Request
-          </button>
-        </div>
-      </div>
+                <div className="friend-item__xp-bar">
+                  <div className="friend-item__xp-fill" style={{ width: `${xpPercent}%` }} />
+                  <span className="friend-item__xp-text">{xp}/{xp + xpNext} XP</span>
+                </div>
+                <div className="friend-item__hover-stats">
+                  <span>🔥 {friend.streak} streak</span>
+                  <span>📆 {friend.weekStreak ?? 0}/7 this week</span>
+                </div>
+              </div>
+            </div>
+          );
+        })
+      )}
+    </div>
+
+    <div className="lobby__friends-request">
+      <input
+        type="email"
+        placeholder="Friend email"
+        value={friendEmail}
+        onChange={(e) => setFriendEmail(e.target.value)}
+        className="pixel-input"
+      />
+      <button
+        className="pixel-btn"
+        onClick={async () => {
+          if (!friendEmail.trim()) return;
+          setSubmitting(true);
+          setError('');
+          try {
+            await friendsApi.request(friendEmail.trim());
+            setFriendEmail('');
+            await loadData();
+          } catch (err) {
+            setError(err instanceof ApiError ? err.message : 'Failed to send request');
+          } finally {
+            setSubmitting(false);
+          }
+        }}
+        disabled={!friendEmail.trim() || submitting}
+      >
+        Send Request
+      </button>
+    </div>
+  </div>
+)}
 
       {showForgeModal && (
         <div
