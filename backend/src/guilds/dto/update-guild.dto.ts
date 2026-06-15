@@ -13,6 +13,5 @@ export class UpdateGuildDto {
 
   @IsString()
   @IsOptional()
-  @MaxLength(8)
   avatar?: string;
 }

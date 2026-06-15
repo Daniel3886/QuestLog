@@ -4,7 +4,7 @@ import React, { useCallback, useEffect, useState } from 'react';
 import { ApiError, guildsApi } from '@/lib/api';
 import { guildQuestTypeMap, trackingMap } from '@/lib/enums';
 import { useRequireAuth } from '@/hooks/useRequireAuth';
-import type { Guild, GuildBadge, GuildQuest } from '@/lib/types';
+import type { Guild, GuildBadge, GuildQuest, GuildSummary } from '@/lib/types';
 import ErrorBanner from '@/components/ErrorBanner';
 import './guilds.scss';
 
@@ -22,61 +22,192 @@ export default function GuildsPage() {
   const [error, setError] = useState('');
   const [submitting, setSubmitting] = useState(false);
 
+  // UI state for modals
   const [selectedQuest, setSelectedQuest] = useState<GuildQuest | null>(null);
   const [showCreateQuestModal, setShowCreateQuestModal] = useState(false);
   const [showCreateGuildModal, setShowCreateGuildModal] = useState(false);
+  const [showEditGuildModal, setShowEditGuildModal] = useState(false);
+  const [showBrowseGuilds, setShowBrowseGuilds] = useState(false);
+  const [viewingGuild, setViewingGuild] = useState<Guild | null>(null);
+  const [allGuilds, setAllGuilds] = useState<GuildSummary[]>([]);
+  const [inviteEmail, setInviteEmail] = useState('');
+  const [transferLeaderId, setTransferLeaderId] = useState('');
+
+  // Form states
   const [logValue, setLogValue] = useState('');
   const [logNote, setLogNote] = useState('');
-
-  const [newGuild, setNewGuild] = useState({
-    name: '',
-    description: '',
-    avatar: '🐉',
-  });
-
+  const [newGuild, setNewGuild] = useState({ name: '', description: '', avatar: '🐉' });
+  const [editGuild, setEditGuild] = useState({ name: '', description: '', avatar: '' });
   const [newQuest, setNewQuest] = useState({
     title: '',
     description: '',
-    type: 'summative' as 'summative' | 'concurrent' | 'streak',
-    trackingType: 'binary' as 'binary' | 'numeric' | 'timer',
+    type: 'summative' as const,
+    trackingType: 'binary' as const,
     targetValue: 1,
     unit: 'times',
     rewardGems: 50,
   });
 
-  const applyGuild = (data: Guild | null) => {
-    setGuild(data);
-    if (!data) {
-      setActiveQuests([]);
-      setCompletedQuests([]);
-      setBadges([]);
-      return;
-    }
-    setActiveQuests(data.activeQuests ?? []);
-    setCompletedQuests(data.completedQuests ?? []);
-    setBadges(data.badges ?? []);
-  };
-
+  // Load guild data
   const loadGuild = useCallback(async () => {
     setError('');
     try {
       const data = await guildsApi.me();
-      applyGuild(data);
+      setGuild(data);
+      if (data) {
+        setActiveQuests(data.activeQuests ?? []);
+        setCompletedQuests(data.completedQuests ?? []);
+        setBadges(data.badges ?? []);
+      } else {
+        setActiveQuests([]);
+        setCompletedQuests([]);
+        setBadges([]);
+      }
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : 'Failed to load guild');
+      setError(err instanceof ApiError ? err.message : '');
     } finally {
       setLoading(false);
     }
   }, []);
 
   useEffect(() => {
-    if (ready) {
-      loadGuild();
-    }
+    if (ready) loadGuild();
   }, [ready, loadGuild]);
 
   const isLeader = guild?.currentUserRole === 'leader';
 
+  // ----- Invite member -----
+  const handleInvite = async () => {
+    if (!guild || !inviteEmail.trim()) return;
+    setSubmitting(true);
+    setError('');
+    try {
+      await guildsApi.invite(guild.id, inviteEmail.trim());
+      setInviteEmail('');
+      setError('Invitation sent!');
+      setTimeout(() => setError(''), 2000);
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : 'Invitation failed');
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  // ----- Leave guild -----
+  const handleLeave = async () => {
+    if (!guild) return;
+    if (!window.confirm('Are you sure you want to leave this guild?')) return;
+    setSubmitting(true);
+    try {
+      await guildsApi.leave(guild.id);
+      await loadGuild();
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : 'Failed to leave guild');
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  // ----- Remove member (leader only) -----
+  const handleRemoveMember = async (userId: string, userName: string) => {
+    if (!guild) return;
+    if (!window.confirm(`Remove ${userName} from the guild?`)) return;
+    setSubmitting(true);
+    try {
+      await guildsApi.removeMember(guild.id, userId);
+      await loadGuild();
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : 'Failed to remove member');
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  // ----- Edit guild info (leader only) -----
+  const openEditModal = () => {
+    if (!guild) return;
+    setEditGuild({
+      name: guild.name,
+      description: guild.description || '',
+      avatar: guild.avatar,
+    });
+    setShowEditGuildModal(true);
+  };
+
+  const handleUpdateGuild = async () => {
+    if (!guild) return;
+    setSubmitting(true);
+    try {
+      await guildsApi.update(guild.id, {
+        name: editGuild.name !== guild.name ? editGuild.name : undefined,
+        description: editGuild.description !== guild.description ? editGuild.description : undefined,
+        avatar: editGuild.avatar !== guild.avatar ? editGuild.avatar : undefined,
+      });
+      await loadGuild();
+      setShowEditGuildModal(false);
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : 'Update failed');
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  // ----- Transfer leadership (leader only) -----
+  const handleTransferLeadership = async () => {
+    if (!guild || !transferLeaderId) return;
+    if (!window.confirm('Transfer leadership to the selected member?')) return;
+    setSubmitting(true);
+    try {
+      await guildsApi.transferLeadership(guild.id, transferLeaderId);
+      await loadGuild();
+      setShowEditGuildModal(false);
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : 'Transfer failed');
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  // ----- Delete guild (leader only) -----
+  const handleDeleteGuild = async () => {
+    if (!guild) return;
+    if (!window.confirm('⚠️ Delete the guild? This action cannot be undone.')) return;
+    if (!window.confirm('Are you absolutely sure? All data will be lost.')) return;
+    setSubmitting(true);
+    try {
+      await guildsApi.delete(guild.id);
+      await loadGuild(); // will set guild to null
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : 'Deletion failed');
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  // ----- Browse all guilds -----
+  const loadAllGuilds = async () => {
+    setSubmitting(true);
+    try {
+      const guilds = await guildsApi.listAll();
+      setAllGuilds(guilds);
+      setShowBrowseGuilds(true);
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : 'Failed to load guilds');
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const viewGuildDetails = async (guildId: string) => {
+    try {
+      const data = await guildsApi.getPublic(guildId);
+      setViewingGuild(data);
+    } catch (err) {
+      setError('Failed to load guild details');
+    }
+  };
+
+  // ----- Quest actions (unchanged) -----
   const handleLogProgress = (quest: GuildQuest) => {
     setSelectedQuest(quest);
     setLogValue('');
@@ -86,23 +217,14 @@ export default function GuildsPage() {
   const submitProgress = async () => {
     if (!selectedQuest || !guild) return;
     const amount = parseFloat(logValue);
-    if (Number.isNaN(amount) || amount <= 0) return;
-
+    if (isNaN(amount) || amount <= 0) return;
     setSubmitting(true);
-    setError('');
     try {
-      await guildsApi.logProgress(
-        guild.id,
-        selectedQuest.id,
-        amount,
-        logNote || undefined,
-      );
+      await guildsApi.logProgress(guild.id, selectedQuest.id, amount, logNote || undefined);
       setSelectedQuest(null);
       await loadGuild();
     } catch (err) {
-      setError(
-        err instanceof ApiError ? err.message : 'Failed to log progress',
-      );
+      setError(err instanceof ApiError ? err.message : 'Failed to log progress');
     } finally {
       setSubmitting(false);
     }
@@ -111,20 +233,17 @@ export default function GuildsPage() {
   const handleCreateGuild = async () => {
     if (!newGuild.name.trim()) return;
     setSubmitting(true);
-    setError('');
     try {
       const created = await guildsApi.create({
         name: newGuild.name.trim(),
         description: newGuild.description.trim() || undefined,
         avatar: newGuild.avatar,
       });
-      applyGuild(created);
+      setGuild(created);
       setShowCreateGuildModal(false);
       setNewGuild({ name: '', description: '', avatar: '🐉' });
     } catch (err) {
-      setError(
-        err instanceof ApiError ? err.message : 'Failed to create guild',
-      );
+      setError(err instanceof ApiError ? err.message : 'Failed to create guild');
     } finally {
       setSubmitting(false);
     }
@@ -133,7 +252,6 @@ export default function GuildsPage() {
   const handleCreateQuest = async () => {
     if (!guild || !newQuest.title.trim()) return;
     setSubmitting(true);
-    setError('');
     try {
       await guildsApi.createQuest(guild.id, {
         title: newQuest.title.trim(),
@@ -156,9 +274,7 @@ export default function GuildsPage() {
       });
       await loadGuild();
     } catch (err) {
-      setError(
-        err instanceof ApiError ? err.message : 'Failed to create quest',
-      );
+      setError(err instanceof ApiError ? err.message : 'Failed to create quest');
     } finally {
       setSubmitting(false);
     }
@@ -167,7 +283,6 @@ export default function GuildsPage() {
   const handleVote = async (questId: string) => {
     if (!guild) return;
     setSubmitting(true);
-    setError('');
     try {
       await guildsApi.voteQuest(guild.id, questId);
       await loadGuild();
@@ -178,58 +293,32 @@ export default function GuildsPage() {
     }
   };
 
-  const getProgressPercentage = (quest: GuildQuest): number => {
-    if (!quest.targetValue) return 0;
-    return (quest.currentValue / quest.targetValue) * 100;
-  };
-
-  const getTypeIcon = (type: string): string => {
+  // Helpers
+  const getProgressPercentage = (quest: GuildQuest) => (quest.targetValue ? (quest.currentValue / quest.targetValue) * 100 : 0);
+  const getTypeIcon = (type: string) => {
     switch (type) {
-      case 'summative':
-        return '📊';
-      case 'concurrent':
-        return '👥';
-      case 'streak':
-        return '🔥';
-      default:
-        return '⚔️';
+      case 'summative': return '📊';
+      case 'concurrent': return '👥';
+      case 'streak': return '🔥';
+      default: return '⚔️';
     }
   };
-
-  const getStatusBadge = (
-    status: string,
-  ): { text: string; color: string; icon: string } => {
+  const getStatusBadge = (status: string) => {
     switch (status) {
-      case 'drafting':
-        return { text: 'VOTING', color: 'var(--pixel-gold)', icon: '🗳️' };
-      case 'active':
-        return { text: 'ACTIVE', color: 'var(--pixel-success)', icon: '⚔️' };
-      case 'completed':
-        return {
-          text: 'COMPLETED',
-          color: 'var(--pixel-secondary)',
-          icon: '🏆',
-        };
-      case 'failed':
-        return { text: 'FAILED', color: 'var(--pixel-primary)', icon: '💀' };
-      default:
-        return { text: 'ACTIVE', color: 'var(--pixel-success)', icon: '⚔️' };
+      case 'drafting': return { text: 'VOTING', color: 'var(--pixel-gold)', icon: '🗳️' };
+      case 'active': return { text: 'ACTIVE', color: 'var(--pixel-success)', icon: '⚔️' };
+      case 'completed': return { text: 'COMPLETED', color: 'var(--pixel-secondary)', icon: '🏆' };
+      case 'failed': return { text: 'FAILED', color: 'var(--pixel-primary)', icon: '💀' };
+      default: return { text: 'ACTIVE', color: 'var(--pixel-success)', icon: '⚔️' };
     }
   };
-
   const getXpPercentage = () => {
     if (!guild || !guild.xpNext) return 0;
     return (guild.xp / guild.xpNext) * 100;
   };
 
-  if (!ready || loading) {
-    return (
-      <div className="guilds">
-        <p>Loading guild hall...</p>
-      </div>
-    );
-  }
-
+  // Loading / no guild
+  if (!ready || loading) return <div className="guilds"><p>Loading guild hall...</p></div>;
   if (!guild) {
     return (
       <div className="guilds">
@@ -238,15 +327,11 @@ export default function GuildsPage() {
           <div className="guilds__empty-icon">⚔️</div>
           <h2>No Guild Yet</h2>
           <p>Create or join a guild to start your cooperative adventure!</p>
-          <button
-            type="button"
-            className="pixel-btn"
-            onClick={() => setShowCreateGuildModal(true)}
-          >
-            Create Guild
-          </button>
+          <div style={{ display: 'flex', gap: '1rem', justifyContent: 'center' }}>
+            <button className="pixel-btn" onClick={() => setShowCreateGuildModal(true)}>Create Guild</button>
+            <button className="pixel-btn pixel-btn--secondary" onClick={loadAllGuilds}>Browse Guilds</button>
+          </div>
         </div>
-
         {showCreateGuildModal && (
           <div
             className="modal-overlay"
@@ -327,6 +412,87 @@ export default function GuildsPage() {
             </div>
           </div>
         )}
+        {/* Browse Guilds Modal */}
+      {showBrowseGuilds && (
+        <div className="modal-overlay" onClick={() => setShowBrowseGuilds(false)}>
+          <div className="modal pixel-card modal--large" onClick={(e) => e.stopPropagation()}>
+            <div className="modal__header">
+              <h3>All Guilds</h3>
+              <button className="modal__close" onClick={() => setShowBrowseGuilds(false)}>✖</button>
+            </div>
+            <div className="modal__body">
+              <div className="guilds__browse-list">
+                {allGuilds.map(g => (
+                  <div key={g.id} className="guild-browse-item pixel-card">
+                    <div className="guild-browse-avatar">{g.avatar}</div>
+                    <div className="guild-browse-info">
+                      <h4>{g.name}</h4>
+                      <p>{g.description}</p>
+                      <span>👥 {g.memberCount} members • Lv.{g.level}</span>
+                    </div>
+                    <button className="pixel-btn pixel-btn--small" onClick={() => viewGuildDetails(g.id)}>Show</button>
+                    <button className="pixel-btn pixel-btn--small pixel-btn--secondary"
+                    onClick={async () => {
+                      try {
+                        await guildsApi.join(g.id);
+                        await loadGuild();
+                        setShowBrowseGuilds(false);
+                      } catch (err) {
+                        setError(err instanceof ApiError ? err.message : 'Failed to join guild');
+                      }
+                    }}
+                  >
+                    Join Guild
+                  </button>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+      {/* View Guild Details Modal (read‑only) */}
+      {viewingGuild && (
+        <div className="modal-overlay" onClick={() => setViewingGuild(null)}>
+          <div className="modal pixel-card modal--large" onClick={(e) => e.stopPropagation()}>
+            <div className="modal__header">
+              <h3>{viewingGuild.name}</h3>
+              <button className="modal__close" onClick={() => setViewingGuild(null)}>✖</button>
+            </div>
+            <div className="modal__body guild-view-modal">
+              <div className="guild-view-header">
+                <div className="guild-view-avatar">{viewingGuild.avatar}</div>
+                <div className="guild-view-info">
+                  <p><strong>Description:</strong> {viewingGuild.description}</p>
+                  <p><strong>Level:</strong> {viewingGuild.level} • <strong>Gems:</strong> {viewingGuild.gems}</p>
+                  <p><strong>Members:</strong> {viewingGuild.members.length}/10</p>
+                </div>
+              </div>
+              <h4>Members</h4>
+              <div className="guild-view-members">
+                {viewingGuild.members.map(m => (
+                  <div key={m.id} className="guild-view-member">
+                    <span>{m.avatar} {m.username}</span>
+                    {m.role === 'leader' && <span className="member-card__role">Leader</span>}
+                  </div>
+                ))}
+              </div>
+              <h4>Recent Badges</h4>
+              <div className="guild-view-badges">
+                {viewingGuild.badges?.slice(0, 5).map(b => (
+                  <div key={b.id}><span>{b.icon}</span> {b.name}</div>
+                ))}
+              </div>
+              <h4>Active Quests</h4>
+              <div className="guild-view-quests">
+                {viewingGuild.activeQuests?.slice(0, 3).map(q => (
+                  <div key={q.id}>⚔️ {q.title}</div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
       </div>
     );
   }
@@ -348,33 +514,47 @@ export default function GuildsPage() {
             <div className="guilds__stat">
               <span>💎 {guild.gems} gems</span>
               <span>👥 {guild.members.length}/10 members</span>
-              <span>
-                📅 Founded {new Date(guild.createdAt).toLocaleDateString()}
-              </span>
+              <span>📅 Founded {new Date(guild.createdAt).toLocaleDateString()}</span>
             </div>
             <div className="guilds__xp-bar">
-              <div
-                className="guilds__xp-fill"
-                style={{ width: `${getXpPercentage()}%` }}
-              ></div>
-              <span className="guilds__xp-text">
-                {guild.xp}/{guild.xpNext} XP
-              </span>
+              <div className="guilds__xp-fill" style={{ width: `${getXpPercentage()}%` }}></div>
+              <span className="guilds__xp-text">{guild.xp}/{guild.xpNext} XP</span>
             </div>
           </div>
         </div>
-        {isLeader && (
-          <button
-            type="button"
-            className="pixel-btn"
-            onClick={() => setShowCreateQuestModal(true)}
-          >
-            + Create Quest
-          </button>
-        )}
+        <div className="guilds__actions">
+          {isLeader && (
+            <>
+              <button className="pixel-btn" onClick={() => setShowCreateQuestModal(true)}>+ Quest</button><br />
+              <button className="pixel-btn pixel-btn--secondary" onClick={openEditModal}>⚙️ Edit</button>
+              <button className="pixel-btn pixel-btn--secondary" onClick={handleDeleteGuild}>🗑️ Delete</button><br />
+            </>
+          )}
+          {!isLeader && <button className="pixel-btn" onClick={async () => { await handleLeave(); await loadGuild(); }}>Leave Guild</button>}
+          {/* <button className="pixel-btn pixel-btn--small" onClick={loadAllGuilds}>🔍 Browse Guilds</button> */}
+        </div>
       </div>
 
+      {isLeader && (
+        <div className="guilds__invite pixel-card">
+          <h3>Invite Member</h3>
+          <div className="guilds__invite-form">
+            <input
+              type="email"
+              placeholder="friend@example.com"
+              value={inviteEmail}
+              onChange={(e) => setInviteEmail(e.target.value)}
+              className="pixel-input"
+            />
+            <button className="pixel-btn" onClick={handleInvite} disabled={submitting || !inviteEmail.trim()}>
+              Send Invitation
+            </button>
+          </div>
+        </div>
+      )}
+
       <div className="guilds__hall">
+        {/* Left column: Members & Badges */}
         <div className="guilds__left">
           <section className="guilds__section">
             <h2 className="pixel-heading">👥 GUILD MEMBERS 👥</h2>
@@ -384,21 +564,25 @@ export default function GuildsPage() {
                   <div className="member-card__avatar">{member.avatar}</div>
                   <div className="member-card__info">
                     <div className="member-card__name-row">
-                      <span className="member-card__name">
-                        {member.username}
-                      </span>
-                      {member.role === 'leader' && (
-                        <span className="member-card__role">👑 LEADER</span>
-                      )}
+                      <span className="member-card__name">{member.username}</span>
+                      {member.role === 'leader' && <span className="member-card__role">👑 LEADER</span>}
                     </div>
                     <div className="member-card__stats">
                       <span>🔥 {member.streak} day streak</span>
                       <span>📊 {member.contribution} pts</span>
-                      <span>
-                        📅 Joined{' '}
-                        {new Date(member.joinedAt).toLocaleDateString()}
-                      </span>
+                      <span>📅 Joined {new Date(member.joinedAt).toLocaleDateString()}</span>
                     </div>
+                    {isLeader && member.role !== 'leader' && (
+                      <div className="member-card__actions">
+                        <button
+                          className="pixel-btn pixel-btn--small"
+                          onClick={() => handleRemoveMember(member.userId, member.username)}
+                          disabled={submitting}
+                        >
+                          Remove
+                        </button>
+                      </div>
+                    )}
                   </div>
                 </div>
               ))}
@@ -408,18 +592,14 @@ export default function GuildsPage() {
           <section className="guilds__section">
             <h2 className="pixel-heading">🏅 GUILD BADGES 🏅</h2>
             <div className="guilds__badges">
-              {badges.length === 0 && (
-                <p className="guilds__empty-quests">No badges earned yet.</p>
-              )}
+              {badges.length === 0 && <p>No badges earned yet.</p>}
               {badges.map((badge) => (
                 <div key={badge.id} className="badge-card pixel-card">
                   <div className="badge-card__icon">{badge.icon}</div>
                   <div className="badge-card__info">
                     <span className="badge-card__name">{badge.name}</span>
                     <span className="badge-card__desc">{badge.description}</span>
-                    <span className="badge-card__date">
-                      Earned {new Date(badge.earnedAt).toLocaleDateString()}
-                    </span>
+                    <span className="badge-card__date">Earned {new Date(badge.earnedAt).toLocaleDateString()}</span>
                   </div>
                 </div>
               ))}
@@ -626,6 +806,120 @@ export default function GuildsPage() {
         </div>
       )}
 
+      {/* Edit Guild Modal (leader only) */}
+      {showEditGuildModal && (
+        <div className="modal-overlay" onClick={() => setShowEditGuildModal(false)}>
+          <div className="modal pixel-card modal--large" onClick={(e) => e.stopPropagation()}>
+            <div className="modal__header">
+              <h3>Edit Guild</h3>
+              <button className="modal__close" onClick={() => setShowEditGuildModal(false)}>✖</button>
+            </div>
+            <div className="modal__body">
+              <div className="modal__field">
+                <label>Guild Name</label>
+                <input type="text" value={editGuild.name} onChange={(e) => setEditGuild({ ...editGuild, name: e.target.value })} className="pixel-input" />
+              </div>
+              <div className="modal__field">
+                <label>Description</label>
+                <textarea value={editGuild.description} onChange={(e) => setEditGuild({ ...editGuild, description: e.target.value })} className="pixel-input pixel-input--textarea" rows={2} />
+              </div>
+              <div className="modal__field">
+                <label>Icon</label>
+                <div className="modal__icon-grid">
+                  {availableIcons.map(icon => (
+                    <button key={icon} type="button" className={`modal__icon-btn ${editGuild.avatar === icon ? 'active' : ''}`} onClick={() => setEditGuild({ ...editGuild, avatar: icon })}>{icon}</button>
+                  ))}
+                </div>
+              </div>
+              <hr />
+              <div className="modal__field">
+                <label>Transfer Leadership (optional)</label>
+                <select value={transferLeaderId} onChange={(e) => setTransferLeaderId(e.target.value)} className="pixel-input">
+                  <option value="">Select new leader</option>
+                  {guild.members.filter(m => m.role !== 'leader').map(m => (
+                    <option key={m.userId} value={m.userId}>{m.username}</option>
+                  ))}
+                </select>
+                <button className="pixel-btn pixel-btn--small" onClick={handleTransferLeadership} disabled={!transferLeaderId || submitting}>Transfer</button>
+              </div>
+            </div>
+            <div className="modal__footer">
+              <button className="pixel-btn" onClick={handleUpdateGuild} disabled={submitting}>Save Changes</button>
+              <button className="pixel-btn pixel-btn--secondary" onClick={() => setShowEditGuildModal(false)}>Cancel</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 
+      {showBrowseGuilds && (
+        <div className="modal-overlay" onClick={() => setShowBrowseGuilds(false)}>
+          <div className="modal pixel-card modal--large" onClick={(e) => e.stopPropagation()}>
+            <div className="modal__header">
+              <h3>All Guilds</h3>
+              <button className="modal__close" onClick={() => setShowBrowseGuilds(false)}>✖</button>
+            </div>
+            <div className="modal__body">
+              <div className="guilds__browse-list">
+                {allGuilds.map(g => (
+                  <div key={g.id} className="guild-browse-item pixel-card">
+                    <div className="guild-browse-avatar">{g.avatar}</div>
+                    <div className="guild-browse-info">
+                      <h4>{g.name}</h4>
+                      <p>{g.description}</p>
+                      <span>👥 {g.memberCount} members • Lv.{g.level}</span>
+                    </div>
+                    <button className="pixel-btn pixel-btn--small" onClick={() => viewGuildDetails(g.id)}>Show</button>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {viewingGuild && (
+        <div className="modal-overlay" onClick={() => setViewingGuild(null)}>
+          <div className="modal pixel-card modal--large" onClick={(e) => e.stopPropagation()}>
+            <div className="modal__header">
+              <h3>{viewingGuild.name}</h3>
+              <button className="modal__close" onClick={() => setViewingGuild(null)}>✖</button>
+            </div>
+            <div className="modal__body guild-view-modal">
+              <div className="guild-view-header">
+                <div className="guild-view-avatar">{viewingGuild.avatar}</div>
+                <div className="guild-view-info">
+                  <p><strong>Description:</strong> {viewingGuild.description}</p>
+                  <p><strong>Level:</strong> {viewingGuild.level} • <strong>Gems:</strong> {viewingGuild.gems}</p>
+                  <p><strong>Members:</strong> {viewingGuild.members.length}/10</p>
+                </div>
+              </div>
+              <h4>Members</h4>
+              <div className="guild-view-members">
+                {viewingGuild.members.map(m => (
+                  <div key={m.id} className="guild-view-member">
+                    <span>{m.avatar} {m.username}</span>
+                    {m.role === 'leader' && <span className="member-card__role">Leader</span>}
+                  </div>
+                ))}
+              </div>
+              <h4>Recent Badges</h4>
+              <div className="guild-view-badges">
+                {viewingGuild.badges?.slice(0, 5).map(b => (
+                  <div key={b.id}><span>{b.icon}</span> {b.name}</div>
+                ))}
+              </div>
+              <h4>Active Quests</h4>
+              <div className="guild-view-quests">
+                {viewingGuild.activeQuests?.slice(0, 3).map(q => (
+                  <div key={q.id}>⚔️ {q.title}</div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+      )} */}
+
       {showCreateQuestModal && (
         <div
           className="modal-overlay"
@@ -771,5 +1065,6 @@ export default function GuildsPage() {
         </div>
       )}
     </div>
+    
   );
 }

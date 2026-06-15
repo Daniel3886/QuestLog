@@ -139,6 +139,15 @@ export interface Guild {
   currentUserRole?: string;
 }
 
+export interface GuildSummary {
+  id: string;
+  name: string;
+  avatar: string;
+  description: string;
+  memberCount: number;
+  level: number;
+}
+
 export interface RankedUser {
   id: string;
   rank: number;
@@ -176,7 +185,6 @@ export interface FriendSummary {
   since: string;
   bio?: string | null;
 }
-
 
 export interface FriendRequest {
   id: string;        

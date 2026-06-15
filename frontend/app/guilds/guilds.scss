@@ -439,7 +439,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 10000;
+  z-index: 9999;
   cursor: pointer;
 }
 
@@ -542,4 +542,68 @@
     padding: 1rem;
     border-top: 2px solid var(--pixel-border);
   }
+}
+
+.guilds__invite {
+  padding: 1rem;
+  margin-bottom: 1rem;
+  background: var(--pixel-bg-light);
+}
+.guilds__invite-form {
+  display: flex;
+  gap: 0.5rem;
+  align-items: flex-end;
+}
+.guild-browse-item {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 0.75rem;
+  margin-bottom: 0.75rem;
+  .guild-browse-avatar { font-size: 2rem; }
+  .guild-browse-info { flex: 1; }
+}
+.guild-view-modal {
+  .guild-view-header {
+    display: flex;
+    gap: 1rem;
+    margin-bottom: 1rem;
+  }
+  .guild-view-avatar { font-size: 3rem; }
+  .guild-view-members, .guild-view-badges, .guild-view-quests {
+    margin: 0.5rem 0;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+  }
+}
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.85);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10001;
+  cursor: pointer;
+}
+
+.modal {
+  position: relative;
+  max-width: 800px;
+  width: 90%;
+  background: var(--pixel-card);
+  border: 4px solid var(--pixel-border);
+  box-shadow: 8px 8px 0 rgba(0, 0, 0, 0.5);
+  cursor: default;
+  max-height: 90vh;
+  overflow-y: auto;
+}
+
+.modal--large {
+  max-width: 800px;
 }

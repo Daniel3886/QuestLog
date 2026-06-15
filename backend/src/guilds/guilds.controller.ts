@@ -1,10 +1,12 @@
 import {
   Body,
   Controller,
+  Delete,
   Get,
   Param,
   Patch,
   Post,
+  Query,
   UseGuards,
 } from '@nestjs/common';
 import { JwtAuthGuard } from 'src/auth/guards/jwt-auth.guard';
@@ -15,6 +17,8 @@ import { CreateGuildQuestDto } from './dto/create-guild-quest.dto';
 import { LogGuildProgressDto } from './dto/log-guild-progress.dto';
 import { UpdateGuildDto } from './dto/update-guild.dto';
 import { GuildsService } from './guilds.service';
+import { TransferLeadershipDto } from './dto/transfer-leadership.dto';
+import { InviteMemberDto } from './dto/invite-member.dto';
 
 @UseGuards(JwtAuthGuard)
 @Controller('guilds')
@@ -29,11 +33,6 @@ export class GuildsController {
   @Get('me')
   getMyGuild(@User() user: AuthUser) {
     return this.guildsService.getMyGuild(user.id);
-  }
-
-  @Get(':id')
-  getGuild(@User() user: AuthUser, @Param('id') id: string) {
-    return this.guildsService.getGuild(user.id, id);
   }
 
   @Patch(':id')
@@ -86,5 +85,44 @@ export class GuildsController {
     @Body() dto: LogGuildProgressDto,
   ) {
     return this.guildsService.logGuildProgress(user.id, id, questId, dto);
+  }
+
+  @Get()
+  listAllGuilds(@Query('limit') limit?: string) {
+    return this.guildsService.listAllGuilds(limit ? parseInt(limit, 10) : 50);
+  }
+
+  // GET /guilds/:id – public guild details (for viewing)
+  @Get(':id')
+  getGuildPublic(@Param('id') id: string) {
+    return this.guildsService.getGuildPublic(id);
+  }
+
+  // POST /guilds/:id/invite – leader invites a user by email
+  @Post(':id/invite')
+  @UseGuards(JwtAuthGuard)
+  inviteMember(@User() user: AuthUser, @Param('id') guildId: string, @Body() dto: InviteMemberDto) {
+    return this.guildsService.inviteMember(user.id, guildId, dto.email);
+  }
+
+  // DELETE /guilds/:id/members/:userId – leader removes a member
+  @Delete(':id/members/:userId')
+  @UseGuards(JwtAuthGuard)
+  removeMember(@User() user: AuthUser, @Param('id') guildId: string, @Param('userId') memberId: string) {
+    return this.guildsService.removeMember(user.id, guildId, memberId);
+  }
+
+  // POST /guilds/:id/transfer – transfer leadership
+  @Post(':id/transfer')
+  @UseGuards(JwtAuthGuard)
+  transferLeadership(@User() user: AuthUser, @Param('id') guildId: string, @Body() dto: TransferLeadershipDto) {
+    return this.guildsService.transferLeadership(user.id, guildId, dto.newLeaderId);
+  }
+
+  // DELETE /guilds/:id – delete guild (leader only)
+  @Delete(':id')
+  @UseGuards(JwtAuthGuard)
+  deleteGuild(@User() user: AuthUser, @Param('id') guildId: string) {
+    return this.guildsService.deleteGuild(user.id, guildId);
   }
 }

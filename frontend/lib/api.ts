@@ -12,6 +12,7 @@ import type {
   RankedUser,
   TavernComment,
   UserProfile,
+  GuildSummary,
 } from './types';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3000';
@@ -235,6 +236,36 @@ export const guildsApi = {
       method: 'POST',
       body: JSON.stringify({ amount, note }),
     }),
+  invite: (guildId: string, email: string) =>
+    apiFetch(`/guilds/${guildId}/invite`, {
+      method: 'POST',
+      body: JSON.stringify({ email }),
+    }),
+
+  leave: (guildId: string) =>
+    apiFetch(`/guilds/${guildId}/leave`, { method: 'POST' }),
+
+  removeMember: (guildId: string, userId: string) =>
+    apiFetch(`/guilds/${guildId}/members/${userId}`, { method: 'DELETE' }),
+
+  update: (guildId: string, data: { name?: string; description?: string; avatar?: string }) =>
+    apiFetch(`/guilds/${guildId}`, {
+      method: 'PATCH',
+      body: JSON.stringify(data),
+    }),
+
+  transferLeadership: (guildId: string, newLeaderId: string) =>
+    apiFetch(`/guilds/${guildId}/transfer`, {
+      method: 'POST',
+      body: JSON.stringify({ newLeaderId }),
+    }),
+
+  delete: (guildId: string) =>
+    apiFetch(`/guilds/${guildId}`, { method: 'DELETE' }),
+
+  listAll: () => apiFetch<GuildSummary[]>('/guilds'),
+  getPublic: (guildId: string) => apiFetch<Guild>(`/guilds/${guildId}`),
+  join: (guildId: string) => apiFetch<Guild>(`/guilds/${guildId}/join`, { method: 'POST' }),
 };
 
 // Leaderboards

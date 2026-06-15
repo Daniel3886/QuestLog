@@ -97,22 +97,6 @@ export class GuildsService {
     return await this.formatGuild(guild, userId);
   }
 
-  async updateGuild(userId: string, guildId: string, dto: UpdateGuildDto) {
-    await this.ensureLeader(guildId, userId);
-
-    const guild = await this.database.prisma.guild.update({
-      where: { id: guildId },
-      data: {
-        name: dto.name,
-        description: dto.description,
-        avatar: dto.avatar,
-      },
-      include: guildInclude,
-    });
-
-    return await this.formatGuild(guild, userId);
-  }
-
   async joinGuild(userId: string, guildId: string) {
     const existing = await this.database.prisma.guildMember.findFirst({
       where: { userId },
@@ -137,25 +121,6 @@ export class GuildsService {
     });
 
     return this.getGuild(userId, guildId);
-  }
-
-  async leaveGuild(userId: string, guildId: string) {
-    const member = await this.ensureMember(guildId, userId);
-    if (member.role === $Enums.GuildMemberRole.LEADER) {
-      const memberCount = await this.database.prisma.guildMember.count({
-        where: { guildId },
-      });
-      if (memberCount > 1) {
-        throw new BadRequestException(
-          'Transfer leadership before leaving the guild',
-        );
-      }
-      await this.database.prisma.guild.delete({ where: { id: guildId } });
-      return { left: true, guildDeleted: true };
-    }
-
-    await this.database.prisma.guildMember.delete({ where: { id: member.id } });
-    return { left: true, guildDeleted: false };
   }
 
   async listGuildQuests(userId: string, guildId: string) {
@@ -425,5 +390,185 @@ export class GuildsService {
       throw new ForbiddenException('Guild leader access required');
     }
     return member;
+  }
+
+  async listAllGuilds(limit: number = 50) {
+  const guilds = await this.database.prisma.guild.findMany({
+    take: limit,
+    orderBy: { level: 'desc' },
+    include: {
+      members: { select: { user: { select: { id: true, username: true } }, role: true } },
+      _count: { select: { members: true } },
+    },
+  });
+  return guilds.map(g => ({
+    id: g.id,
+    name: g.name,
+    avatar: g.avatar,
+    description: g.description,
+    memberCount: g._count.members,
+    level: g.level,
+    gems: g.gems,
+  }));
+}
+
+async getGuildPublic(guildId: string) {
+  const guild = await this.database.prisma.guild.findUnique({
+    where: { id: guildId },
+  });
+  if (!guild) throw new NotFoundException('Guild not found');
+
+  const members = await this.database.prisma.guildMember.findMany({
+    where: { guildId },
+    include: {
+      user: { select: { id: true, username: true, avatar: true, streak: true, xp: true, bio: true } },
+    },
+  });
+
+  const badges = await this.getGuildBadges(guildId);
+
+  const guildQuests = await this.database.prisma.guildQuest.findMany({
+    where: { guildId, status: { in: [$Enums.GuildQuestStatus.ACTIVE, $Enums.GuildQuestStatus.COMPLETED] } },
+    orderBy: { startDate: 'desc' },
+    take: 5,
+    include: { quest: true },
+  });
+
+  return {
+    id: guild.id,
+    name: guild.name,
+    avatar: guild.avatar,
+    description: guild.description,
+    level: guild.level,
+    gems: guild.gems,
+    members: members.map(m => ({
+      id: m.user.id,
+      username: m.user.username,
+      avatar: m.user.avatar,
+      role: m.role,
+      streak: m.user.streak,
+      joinedAt: m.joinedAt,
+    })),
+    badges: badges,
+    activeQuests: guildQuests
+      .filter(q => q.status === $Enums.GuildQuestStatus.ACTIVE)
+      .map(q => ({
+        id: q.id,
+        title: q.quest.title,
+        description: q.quest.description,
+        currentValue: q.currentValue,
+        targetValue: q.quest.targetValue,
+        unit: q.quest.unit,
+        type: q.questType,
+        status: q.status,
+      })),
+  };
+}
+
+  async inviteMember(leaderId: string, guildId: string, email: string) {
+    // Check leader
+    const membership = await this.database.prisma.guildMember.findUnique({
+      where: { guildId_userId: { guildId, userId: leaderId } },
+    });
+    if (!membership || membership.role !== $Enums.GuildMemberRole.LEADER) throw new ForbiddenException('Only leader can invite');
+    // Find user by email
+    const user = await this.database.prisma.user.findUnique({ where: { email } });
+    if (!user) throw new BadRequestException('User not found');
+    // Check if already in guild
+    const existing = await this.database.prisma.guildMember.findUnique({
+      where: { guildId_userId: { guildId, userId: user.id } },
+    });
+    if (existing) throw new BadRequestException('User already in guild');
+    // Create invite record (optional – you may want an invitation table)
+    // For simplicity, we add directly to guild members with role 'member'
+    await this.database.prisma.guildMember.create({
+      data: {
+        guildId,
+        userId: user.id,
+        role: $Enums.GuildMemberRole.MEMBER,
+      },
+    });
+    return { success: true };
+  }
+
+  async leaveGuild(userId: string, guildId: string) {
+    const membership = await this.database.prisma.guildMember.findUnique({
+      where: { guildId_userId: { guildId, userId } },
+    });
+    if (!membership) throw new NotFoundException('Not a member');
+    if (membership.role === $Enums.GuildMemberRole.LEADER) {
+      // Transfer leadership to the oldest member
+      const otherMembers = await this.database.prisma.guildMember.findMany({
+        where: { guildId, userId: { not: userId } },
+        orderBy: { joinedAt: 'asc' },
+      });
+      if (otherMembers.length === 0) {
+        // No other members: delete guild
+        await this.database.prisma.guild.delete({ where: { id: guildId } });
+        return { success: true, deleted: true };
+      }
+      const newLeader = otherMembers[0];
+      await this.database.prisma.guildMember.update({
+        where: { id: newLeader.id },
+        data: { role: $Enums.GuildMemberRole.LEADER },
+      });
+    }
+    await this.database.prisma.guildMember.delete({ where: { id: membership.id } });
+    return { success: true };
+  }
+
+  async removeMember(leaderId: string, guildId: string, memberId: string) {
+    const leader = await this.database.prisma.guildMember.findUnique({
+      where: { guildId_userId: { guildId, userId: leaderId } },
+    });
+    if (!leader || leader.role !== $Enums.GuildMemberRole.LEADER) throw new ForbiddenException('Only leader can remove members');
+    if (leaderId === memberId) throw new BadRequestException('Cannot remove yourself');
+    const member = await this.database.prisma.guildMember.findUnique({
+      where: { guildId_userId: { guildId, userId: memberId } },
+    });
+    if (!member) throw new NotFoundException('Member not found');
+    await this.database.prisma.guildMember.delete({ where: { id: member.id } });
+    return { success: true };
+  }
+
+  async updateGuild(leaderId: string, guildId: string, dto: UpdateGuildDto) {
+    const leader = await this.database.prisma.guildMember.findUnique({
+      where: { guildId_userId: { guildId, userId: leaderId } },
+    });
+    if (!leader || leader.role !== $Enums.GuildMemberRole.LEADER) throw new ForbiddenException('Only leader can edit guild');
+    await this.database.prisma.guild.update({
+      where: { id: guildId },
+      data: {
+        name: dto.name,
+        description: dto.description,
+        avatar: dto.avatar,
+      },
+    });
+    return { success: true };
+  }
+
+  async transferLeadership(leaderId: string, guildId: string, newLeaderId: string) {
+    const leader = await this.database.prisma.guildMember.findUnique({
+      where: { guildId_userId: { guildId, userId: leaderId } },
+    });
+    if (!leader || leader.role !== $Enums.GuildMemberRole.LEADER) throw new ForbiddenException('Only leader can transfer');
+    const newLeader = await this.database.prisma.guildMember.findUnique({
+      where: { guildId_userId: { guildId, userId: newLeaderId } },
+    });
+    if (!newLeader) throw new NotFoundException('New leader not in guild');
+    await this.database.prisma.$transaction([
+      this.database.prisma.guildMember.update({ where: { id: leader.id }, data: { role: $Enums.GuildMemberRole.MEMBER } }),
+      this.database.prisma.guildMember.update({ where: { id: newLeader.id }, data: { role: $Enums.GuildMemberRole.LEADER } }),
+    ]);
+    return { success: true };
+  }
+
+  async deleteGuild(leaderId: string, guildId: string) {
+    const leader = await this.database.prisma.guildMember.findUnique({
+      where: { guildId_userId: { guildId, userId: leaderId } },
+    });
+    if (!leader || leader.role !== $Enums.GuildMemberRole.LEADER) throw new ForbiddenException('Only leader can delete guild');
+    await this.database.prisma.guild.delete({ where: { id: guildId } });
+    return { success: true };
   }
 }
